@@ -1,0 +1,57 @@
+token UIdent (upper (letter | digit | '_')*);
+
+Prog.       Program ::= [Stmt];
+ExpStmt.    Stmt ::= Exp;
+
+TypeConstr. TC ::= UIdent [Ident] ;
+TypeDecl.   Stmt ::= "type" UIdent [Ident] "=" [TC];
+separator nonempty TC "|";
+
+
+
+Lambda.     Exp ::= Ident [Ident] "=>" FBody;
+Function.   Stmt ::= "def" Ident Ident [Ident] "=" FBody;
+FBodyMatch. FBody ::= MatchBody;
+FBodyExp.   FBody ::= Exp;
+
+Value.      Stmt ::= "val" Ident "=" Exp;
+
+Match.      Exp ::= "match" Exp MatchBody;
+MBody.      MatchBody ::= "{" [MatchCase] "}";
+MCase.      MatchCase ::= "case" PatExp "=>" Exp;
+
+EIf.        Exp ::= "if" Exp "then" Exp "else" Exp;
+ELet.       Exp ::= "let" PatExp "=" Exp "in" Exp;
+
+PatIdent.   Pat ::= Ident;
+PatTCPat.   Pat ::= UIdent [Pat];
+PatWild.    Pat ::= "_";
+
+PETuple.    PatExp ::= PatExp "," PatExp1;
+PECons.     PatExp1 ::= PatExp1 ":" PatExp2;
+PEPat.      PatExp2 ::= Pat;
+coercions PatExp 2;
+
+ETuple.     Exp ::= Exp "," Exp1;
+ECons.      Exp1 ::= Exp1 ":" Exp2;
+EOr.        Exp2 ::= Exp2 "or" Exp3;
+EAnd.       Exp3 ::= Exp3 "and" Exp4;
+ENot.       Exp4 ::= "not" Exp5;
+EAdd.       Exp5 ::= Exp5 "+" Exp6;
+ESub.       Exp5 ::= Exp5 "-" Exp6;
+EMul.       Exp6 ::= Exp6 "*" Exp7;
+EDiv.       Exp6 ::= Exp6 "/" Exp7;
+EMod.       Exp6 ::= Exp6 "%" Exp7;
+EApp.       Exp7 ::= Exp7 [Exp8];
+EInt.       Exp8 ::= Integer;
+ETrue.      Exp8 ::= "True";
+EFalse.     Exp8 ::= "False";
+EVal.       Exp8 ::= Ident;
+
+coercions Exp 8;
+
+separator Stmt ";";
+separator MatchCase ";";
+terminator Ident "";
+terminator Pat "";
+terminator nonempty Exp8 "";
