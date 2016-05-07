@@ -13,6 +13,7 @@ tcExp :: SFL.Exp -> Exp
 tcExp = \case
 --    SFL.ELam
 --    SFL.EMatch
+    SFL.EIf cond e1 e2 -> mulEApp (EVar "_if") (tcExp <$> [cond, e1, e2])
     SFL.ETuple e1 e2 -> EConstr "tuple" [tcExp e1, tcExp e2]
     SFL.ECons e1 e2 -> EApp (EApp (EVar "cons") (tcExp e1)) (tcExp e2)
     SFL.EInt n -> EInt n

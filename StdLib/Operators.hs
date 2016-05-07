@@ -8,13 +8,17 @@ import Control.Monad.Reader
 tInt :: Type
 tInt = TypeConstr "Int" []
 
+tBool :: Type
+tBool = TypeConstr "Bool" []
+
 ops :: MonadIO m => m Env
 ops = do
     fr <- fresh
     return $ fromList [
-        ("plus", Forall [] $ tApp tInt (tApp tInt tInt)),
-        ("succ", Forall [] $ tApp tInt tInt),
+        ("plus", Forall [] $ mulTApp [tInt, tInt] tInt),
+        ("succ", Forall [] $ mulTApp [tInt] tInt),
         ("[]", Forall [fr] $ TypeConstr "list" [TypeVar fr]),
-        ("cons", Forall [fr] $ tApp (TypeVar fr) (tApp (TypeConstr "list" [TypeVar fr]) (TypeConstr "list" [TypeVar fr])))
+        ("cons", Forall [fr] $ mulTApp [TypeVar fr, TypeConstr "list" [TypeVar fr]] (TypeConstr "list" [TypeVar fr])),
+        ("_if", Forall [fr] $ mulTApp [tBool, TypeVar fr, TypeVar fr] (TypeVar fr))
         ]
 

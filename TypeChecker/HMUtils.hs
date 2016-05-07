@@ -56,3 +56,6 @@ mulEApp fun args = foldl (\acc arg -> EApp acc arg) fun args
 
 tApp :: Type -> Type -> Type
 tApp arg ret = TypeConstr "->" [arg, ret]
+
+mulTApp :: [Type] -> Type -> Type
+mulTApp args ret = foldr (\arg acc -> tApp arg acc) ret args
