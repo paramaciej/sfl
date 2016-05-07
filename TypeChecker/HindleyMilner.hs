@@ -38,6 +38,12 @@ infer (ELet x e body) = do
     ts <- generalize t
     local (M.insert x ts) $ infer body
 
+infer (EInt _) = return $ TypeConstr "Int" []
+
+infer (EConstr name es) = do
+    x <- mapM infer es
+    return $ TypeConstr name x
+
 
 instantiate :: TypeScheme -> Tc Type
 instantiate (Forall tvs t) = do
@@ -59,14 +65,14 @@ unify (TypeVar tv) t' = unifyVar tv t'
 unify t (TypeVar tv') = unifyVar tv' t
 unify (TypeConstr name args) (TypeConstr name' args')
     | name == name' = zipWithM_ unify args args'
-    | otherwise = fail "nie umim w inferowanie"
+    | otherwise = fail $ "nie umim w inferowanie: " ++ name ++ " vs. " ++ name'
 
 unifyVar :: TypeVar -> Type -> Tc ()
 unifyVar ioref t = do
     liftIO (readIORef ioref) >>= \case
         Just context -> unify context t
         Nothing -> do
-            zonked <- zonk t
+            zonked <- liftIO $ zonk t
             if occursCheck ioref zonked then
                 fail "occurs check failed <corner!?>"
             else

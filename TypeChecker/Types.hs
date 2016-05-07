@@ -17,4 +17,5 @@ data Exp
     | EApp Exp Exp
     | ELam String Exp
     | ELet String Exp Exp
-    | EInt Int
+    | EInt Integer
+    | EConstr String [Exp] deriving Show
