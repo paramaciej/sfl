@@ -46,7 +46,7 @@ EApp.       Exp7 ::= Exp7 [Exp8];
 EInt.       Exp8 ::= Integer;
 ETrue.      Exp8 ::= "True";
 EFalse.     Exp8 ::= "False";
-EVal.       Exp8 ::= Ident;
+EVar.       Exp8 ::= Ident;
 
 coercions Exp 8;
 
