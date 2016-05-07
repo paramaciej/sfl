@@ -14,7 +14,7 @@ zonk t@(TypeVar tv) = liftIO (readIORef tv) >>= \case
     Just ty -> zonk ty
 
 
-fresh :: Tc (TypeVar)
+fresh :: MonadIO m => m TypeVar
 fresh = liftIO (newIORef Nothing)
 
 
@@ -40,14 +40,19 @@ showType t = do
                 "->" -> case tsStr of
                     [left, right] -> left ++ " -> " ++ right
                     _ -> error "Wrong number of arguments in application!"
-                _ -> "(" ++ name ++ concatMap (" " ++) tsStr ++ ")"
+                "list" -> case tsStr of
+                    [str] -> "[" ++ str ++ "]"
+                    _ -> error "Wrong number of arguments in list type!"
+                _ -> case tsStr of
+                    [] -> name
+                    _ -> "(" ++ name ++ concatMap (" " ++) tsStr ++ ")"
         TypeVar _ -> return "Free"
 
 
 
 mulEApp :: Exp -> [Exp] -> Exp
 mulEApp _ [] = error "Application with no arguments!"
-mulEApp fun args = foldr (\arg acc -> EApp acc arg) fun args
+mulEApp fun args = foldl (\acc arg -> EApp acc arg) fun args
 
-mulTApp :: [Type] -> Type -> Type
-mulTApp (first:args) ret = foldr (\arg acc -> TypeConstr "->" [acc, arg]) first (args ++ [ret])
+tApp :: Type -> Type -> Type
+tApp arg ret = TypeConstr "->" [arg, ret]

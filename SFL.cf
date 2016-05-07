@@ -9,14 +9,14 @@ separator nonempty TC "|";
 
 
 
-Lambda.     Exp ::= Ident [Ident] "=>" FBody;
+ELam.     Exp ::= Ident [Ident] "=>" FBody;
 Function.   Stmt ::= "def" Ident Ident [Ident] "=" FBody;
 FBodyMatch. FBody ::= MatchBody;
 FBodyExp.   FBody ::= Exp;
 
 Value.      Stmt ::= "val" Ident "=" Exp;
 
-Match.      Exp ::= "match" Exp MatchBody;
+EMatch.      Exp ::= "match" Exp MatchBody;
 MBody.      MatchBody ::= "{" [MatchCase] "}";
 MCase.      MatchCase ::= "case" PatExp "=>" Exp;
 
@@ -46,9 +46,12 @@ EApp.       Exp7 ::= Exp7 [Exp8];
 EInt.       Exp8 ::= Integer;
 ETrue.      Exp8 ::= "True";
 EFalse.     Exp8 ::= "False";
+EList.      Exp8 ::= "[" [LElem] "]";
 EVar.       Exp8 ::= Ident;
-
 coercions Exp 8;
+
+EListElem.  LElem ::= Exp1;
+separator LElem ",";
 
 separator Stmt ";";
 separator MatchCase ";";
