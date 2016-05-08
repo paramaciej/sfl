@@ -9,7 +9,7 @@ separator nonempty TC "|";
 
 
 
-ELam.     Exp ::= Ident [Ident] "=>" FBody;
+ELam.       Exp ::= Ident [Ident] "=>" FBody;
 Function.   Stmt ::= "def" Ident Ident [Ident] "=" FBody;
 FBodyMatch. FBody ::= MatchBody;
 FBodyExp.   FBody ::= Exp;
@@ -48,10 +48,14 @@ ETrue.      Exp8 ::= "True";
 EFalse.     Exp8 ::= "False";
 EList.      Exp8 ::= "[" [LElem] "]";
 EVar.       Exp8 ::= Ident;
+ETConstr.   Exp8 ::= UIdent [ETCELem];
 coercions Exp 8;
 
 EListElem.  LElem ::= Exp1;
-separator LElem ",";
+separator   LElem ",";
+
+ETCElem.    ETCELem ::= Exp1;
+separator   ETCELem "";
 
 separator Stmt ";";
 separator MatchCase ";";

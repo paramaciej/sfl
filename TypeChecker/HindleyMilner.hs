@@ -6,6 +6,7 @@ import Data.IORef
 import Data.List
 import Control.Monad.Reader
 import qualified Data.Map as M
+import qualified AbsSFL as SFL
 import Data.Maybe
 import TypeChecker.Types
 import TypeChecker.FTV
@@ -33,16 +34,44 @@ infer (ELam x e) = do
     t <- local (M.insert x (Forall [] tb)) $ infer e
     return $ TypeConstr "->" [tb, t]
 
-infer (ELet x e body) = do
+infer (ELet patExp e body) = do
     t <- infer e
-    ts <- generalize t
-    local (M.insert x ts) $ infer body
+    modifications <- zzz patExp t
+    local modifications $ infer body
 
-infer (EInt _) = return $ TypeConstr "Int" []
+infer (EInt _) = return $ tInt
+
+infer (EBool _) = return $ tBool
 
 infer (EConstr name es) = do
     x <- mapM infer es
     return $ TypeConstr name x
+
+zzz :: SFL.PatExp -> Type -> Tc (Env -> Env)
+zzz patExp ttt = do
+    zonked <- liftIO $ zonk ttt
+    case patExp of
+        SFL.PETuple pe1 pe2 -> case zonked of
+            TypeConstr "tuple" [t1, t2] -> do
+                z1 <- zzz pe1 t1
+                z2 <- zzz pe2 t2
+                return (z1 . z2)
+            _ -> error "wrong tuple matching"
+        SFL.PECons pe1 pe2 -> case zonked of
+            TypeConstr "list" xxxx -> case xxxx of
+                [lt] -> do
+                    ss <- liftIO $ showType zonked
+                    _ <- liftIO $ putStrLn $ "test: " ++ ss
+                    z1 <- zzz pe1 lt
+                    z2 <- zzz pe2 $ TypeConstr "list" [lt]
+                    return (z1 . z2)
+                sss -> error $ "xd: " ++ show  (length sss)
+            _ -> error $ "wrong cons matching"
+        SFL.PEPat (SFL.PatIdent (SFL.Ident name)) -> do
+            ts <- generalize zonked
+            return (M.insert name ts)
+        SFL.PEPat (SFL.PatTCPat (SFL.UIdent name) pats) -> error "TCPAT"
+        SFL.PEPat (SFL.PatWild) -> return id
 
 
 instantiate :: TypeScheme -> Tc Type
