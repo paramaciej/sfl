@@ -36,7 +36,7 @@ infer (ELam x e) = do
 
 infer (ELet patExp e body) = do
     t <- infer e
-    modifications <- zzz patExp t
+    modifications <- inferPatExp patExp t
     local modifications $ infer body
 
 infer (EInt _) = return $ tInt
@@ -47,25 +47,21 @@ infer (EConstr name es) = do
     x <- mapM infer es
     return $ TypeConstr name x
 
-zzz :: SFL.PatExp -> Type -> Tc (Env -> Env)
-zzz patExp ttt = do
+inferPatExp :: SFL.PatExp -> Type -> Tc (Env -> Env)
+inferPatExp patExp ttt = do
     zonked <- liftIO $ zonk ttt
     case patExp of
         SFL.PETuple pe1 pe2 -> case zonked of
             TypeConstr "tuple" [t1, t2] -> do
-                z1 <- zzz pe1 t1
-                z2 <- zzz pe2 t2
+                z1 <- inferPatExp pe1 t1
+                z2 <- inferPatExp pe2 t2
                 return (z1 . z2)
             _ -> error "wrong tuple matching"
         SFL.PECons pe1 pe2 -> case zonked of
-            TypeConstr "list" xxxx -> case xxxx of
-                [lt] -> do
-                    ss <- liftIO $ showType zonked
-                    _ <- liftIO $ putStrLn $ "test: " ++ ss
-                    z1 <- zzz pe1 lt
-                    z2 <- zzz pe2 $ TypeConstr "list" [lt]
-                    return (z1 . z2)
-                sss -> error $ "xd: " ++ show  (length sss)
+            TypeConstr "list" [lt] -> do
+                z1 <- inferPatExp pe1 lt
+                z2 <- inferPatExp pe2 $ TypeConstr "list" [lt]
+                return (z1 . z2)
             _ -> error $ "wrong cons matching"
         SFL.PEPat (SFL.PatIdent (SFL.Ident name)) -> do
             ts <- generalize zonked
