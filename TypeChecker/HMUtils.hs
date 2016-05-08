@@ -48,24 +48,6 @@ showType t = do
         TypeVar _ -> return "Free"
 
 
-
---yyy :: SFL.PatExp -> Type -> Exp -> Tc Type
---yyy patExp t body = case patExp of
---    SFL.PETuple pe1 pe2 -> case t of
---        TypeConstr "tuple" [t1, t2] -> do
---            yyy pe1 t1
---    SFL.PECons pe1 pe2 ->
---    SFL.PEPat (SFL.PatIdent (SFL.Ident name)) -> do
---        ts <- generalize t
---        local (M.insert name ts) $ infer body
---    SFL.PEPat (SFL.PatTCPat (SFL.UIdent name) pats) -> error "TCPAT"
---    SFL.PEPat (SFL.PatWild) -> infer body
---
---    do
---    ts <- generalize t
---    local (M.insert ??? ts) $ infer body
-
-
 mulEApp :: Exp -> [Exp] -> Exp
 mulEApp _ [] = error "Application with no arguments!"
 mulEApp fun args = foldl (\acc arg -> EApp acc arg) fun args

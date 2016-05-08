@@ -14,7 +14,7 @@ tcExp = \case
 --    SFL.EMatch
     SFL.ELet patExp e body -> ELet patExp (tcExp e) (tcExp body)
     SFL.EIf cond e1 e2 -> mulEApp (EVar "_if") (tcExp <$> [cond, e1, e2])
-    SFL.ETuple e1 e2 -> EConstr "tuple" [tcExp e1, tcExp e2]
+    SFL.ETuple es -> EConstr "tuple" (tcExp <$> es)
     SFL.ECons e1 e2 -> EApp (EApp (EVar "cons") (tcExp e1)) (tcExp e2)
     SFL.EInt n -> EInt n
     SFL.ETrue -> EBool True

@@ -4,6 +4,7 @@ module Interpreter.Types where
 
 import Data.Map
 import Control.Monad.Reader
+import Data.List
 
 data Value
     = VInt Integer
@@ -22,9 +23,9 @@ curryV fun = VFun (\x -> VFun (curry fun x))
 
 instance Show Value where
     show = \case
-        VInt n -> "VINT: " ++ show n
-        VBool b -> "VBOOL: " ++ show b
-        VList list -> "VLIST: " ++ show list
-        VTuple tuple -> "VTuple" ++ show tuple
-        VFun _ -> "VFUN"
+        VInt n -> show n
+        VBool b -> show b
+        VList list -> show list
+        VTuple tuple -> "(" ++ (intercalate ", " $ Prelude.map show tuple) ++ ")"
+        VFun _ -> "funkcja"
         VConstr name vals -> "V" ++ name ++ ": " ++ show vals

@@ -84,7 +84,6 @@ generalize t = do
     return $ Forall (fv \\ fvenv) t
 
 
-
 unify :: Type -> Type -> Tc ()
 unify (TypeVar tv) t' = unifyVar tv t'
 unify t (TypeVar tv') = unifyVar tv' t
