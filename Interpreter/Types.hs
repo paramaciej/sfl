@@ -11,14 +11,14 @@ data Value
     | VBool Bool
     | VList [Value]
     | VTuple [Value]
-    | VFun (Value -> Value)
+    | VFun (Value -> VE Value)
     | VConstr String [Value]
 
 type ValEnv = Map String Value
 type VE = ReaderT ValEnv IO
 
-curryV :: ((Value, Value) -> Value) -> Value
-curryV fun = VFun (\x -> VFun (curry fun x))
+curryV :: ((Value, Value) -> VE Value) -> Value
+curryV fun = VFun (\x -> return $ VFun (curry fun x))
 
 
 instance Show Value where

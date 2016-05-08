@@ -22,8 +22,14 @@ eval = \case
         case val of
             VFun fun -> do
                 arg <- eval e2
-                return $ fun arg
+                fun arg
             _ -> error "GUPIA APPL."
+    ELam name body -> do
+        return $ VFun (\xx -> local (M.insert name xx) $ eval body)
+    ELet patExp e body -> do
+        val <- eval e
+        modifications <- patEval patExp val
+        local modifications $ eval body
     EInt n -> return $ VInt n
     EBool b -> return $ VBool b
     EConstr "tuple" exps -> do
@@ -32,12 +38,3 @@ eval = \case
     EConstr name exps -> do
         vals <- mapM eval exps
         return $ VConstr name vals
-    ELet patExp e body -> do
-        val <- eval e
-        modifications <- patEval patExp val
-        local modifications $ eval body
-
---    ELet name e body -> do
---        val <- eval e
---        local (M.insert name val) $ eval body
-    _ -> return $ VBool False
