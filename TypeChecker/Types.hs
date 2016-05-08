@@ -17,12 +17,10 @@ data Exp
     = EVar String
     | EApp Exp Exp
     | ELam String Exp
---    | ELet String Exp Exp
     | ELet SFL.PatExp Exp Exp
     | EInt Integer
     | EBool Bool
     | EConstr String [Exp] deriving Show
-
 
 
 tInt :: Type
