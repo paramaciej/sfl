@@ -38,10 +38,14 @@ infer (ELet patExp e body) = do
     local modifications $ infer body
 
 infer (ELetRec name e body) = do
-    recModifications <- yyyInfer name
+    recModifications <- recMod
     t <- local recModifications $ infer e
     ts <- generalize t
     local (M.insert name ts) $ infer body
+  where
+    recMod  = do
+        fr <- fresh
+        return (M.insert name (Forall [] $ TypeVar fr))
 
 
 infer (EInt _) = return tInt
@@ -54,25 +58,6 @@ infer (EConstr name es) = do
     x <- mapM infer es
     return $ TypeConstr name x
 
-yyyInfer :: String -> Tc (Env -> Env)
-yyyInfer name = do
-    fr <- fresh
-    return (M.insert name (Forall [] $ TypeVar fr))
-
-xxxInfer :: SFL.PatExp -> Tc (Env -> Env)
-xxxInfer = \case
-    SFL.PETuple pe1 pe2 -> combine pe1 pe2
-    SFL.PECons pe1 pe2 -> combine pe1 pe2
-    SFL.PEPat (SFL.PatIdent (SFL.Ident name)) -> do
-        fr <- fresh
-        return (M.insert name (Forall [] $ TypeVar fr))
-    SFL.PEPat (SFL.PatTCPat (SFL.UIdent name) pats) -> error "TCPAT!" -- TODO
-    SFL.PEPat SFL.PatWild -> return id
-  where
-    combine pe1 pe2 = do
-        i1 <- xxxInfer pe1
-        i2 <- xxxInfer pe2
-        return (i1 . i2)
 
 inferPatExp :: SFL.PatExp -> Type -> Tc (Env -> Env)
 inferPatExp patExp ttt = do
@@ -90,10 +75,10 @@ inferPatExp patExp ttt = do
                 z2 <- inferPatExp pe2 $ TypeConstr "list" [lt]
                 return (z1 . z2)
             _ -> error "wrong cons matching"
-        SFL.PEPat (SFL.PatIdent (SFL.Ident name)) -> do
+        SFL.PEPat (SFL.PatLiteral (SFL.LVar (SFL.Ident name))) -> do
             ts <- generalize zonked
             return (M.insert name ts)
-        SFL.PEPat (SFL.PatTCPat (SFL.UIdent name) pats) -> error "TCPAT"
+        SFL.PEPat (SFL.PatLiteral (SFL.LTConstr (SFL.UIdent name) pats)) -> error "TCPAT"
         SFL.PEPat SFL.PatWild -> return id
 
 

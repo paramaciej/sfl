@@ -19,6 +19,6 @@ patEval patExp val = case patExp of
             ev2 <- patEval pe2 (VList vs)
             return (ev1 . ev2)
         _ -> error $ "wrong value for list: " ++ show val
-    PEPat (PatIdent (Ident name)) -> return $ insert name val
+    PEPat (PatLiteral (LVar (Ident name))) -> return $ insert name val
 --     PatTCPat
     PEPat (PatWild) -> return id

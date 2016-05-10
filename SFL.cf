@@ -24,8 +24,7 @@ EIf.        Exp ::= "if" Exp "then" Exp "else" Exp;
 ELet.       Exp ::= "let" PatExp "=" Exp "in" Exp;
 ELetRec.    Exp ::= "let" "rec" Ident "=" Exp "in" Exp;
 
-PatIdent.   Pat ::= Ident;
-PatTCPat.   Pat ::= UIdent [Pat];
+PatLiteral. Pat ::= Literal;
 PatWild.    Pat ::= "_";
 
 PETuple.    PatExp ::= PatExp "," PatExp1;
@@ -50,21 +49,24 @@ EMul.       Exp7 ::= Exp7 "*" Exp8;
 EDiv.       Exp7 ::= Exp7 "/" Exp8;
 EMod.       Exp7 ::= Exp7 "%" Exp8;
 EApp.       Exp8 ::= Exp8 [Exp9];
-EInt.       Exp9 ::= Integer;
-ETrue.      Exp9 ::= "True";
-EFalse.     Exp9 ::= "False";
-EList.      Exp9 ::= "[" [LElem] "]";
-EVar.       Exp9 ::= Ident;
-ETConstr.   Exp9 ::= UIdent [ETCELem];
+ELiteral.   Exp9 ::= Literal;
 coercions Exp 9;
+
+LInt.       Literal ::= Integer;
+LTrue.      Literal ::= "True";
+LFalse.     Literal ::= "False";
+LList.      Literal ::= "[" [LElem] "]";
+LVar.       Literal ::= Ident;
+LTConstr.   Literal ::= UIdent [ETCElem];
+
 
 separator   nonempty Exp1 ",";
 
 EListElem.  LElem ::= Exp1;
 separator   LElem ",";
 
-ETCElem.    ETCELem ::= Exp1;
-separator   ETCELem "";
+ETCElem.    ETCElem ::= Exp1;
+separator   ETCElem "";
 
 separator Stmt ";";
 separator MatchCase ";";

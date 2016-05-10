@@ -11,10 +11,10 @@ import StdLib.Operators
 tcExp :: SFL.Exp -> Exp
 tcExp = \case
     SFL.ELam (SFL.Ident name) body -> case body of
-        SFL.FBodyMatch _ -> error "not yet implemented!"
+        SFL.FBodyMatch _ -> error "not yet implemented!"  -- TODO
         SFL.FBodyExp e -> ELam name (tcExp e)
 
---    SFL.EMatch
+    SFL.EMatch e (SFL.MBody cases) -> EMatch (tcExp e) cases
     SFL.EIf cond e1 e2 -> EIf (tcExp cond) (tcExp e1) (tcExp e2)
     SFL.ELet patExp e body -> ELet patExp (tcExp e) (tcExp body)
     SFL.ELetRec (SFL.Ident name) e body -> ELetRec name (tcExp e) (tcExp body)
@@ -35,14 +35,12 @@ tcExp = \case
     SFL.EDiv e1 e2 -> fapp "div" [e1, e2]
     SFL.EMod e1 e2 -> fapp "mod" [e1, e2]
     SFL.EApp e args -> mulEApp (tcExp e) (tcExp <$> args)
-    SFL.EInt n -> EInt n
-    SFL.ETrue -> EBool True
-    SFL.EFalse -> EBool False
-    SFL.EList lElems -> foldr (\(SFL.EListElem e) acc -> mulEApp (EVar "cons") [tcExp e, acc]) (EVar "[]") lElems
-    SFL.EVar (SFL.Ident name) -> EVar name
-    SFL.ETConstr (SFL.UIdent name) args -> EConstr name ((tcExp . (\(SFL.ETCElem e) -> e))<$> args)
-
-    _ -> error "lololol"
+    SFL.ELiteral (SFL.LInt n) -> EInt n
+    SFL.ELiteral SFL.LTrue -> EBool True
+    SFL.ELiteral SFL.LFalse -> EBool False
+    SFL.ELiteral (SFL.LList lElems) -> foldr (\(SFL.EListElem e) acc -> mulEApp (EVar "cons") [tcExp e, acc]) (EVar "[]") lElems
+    SFL.ELiteral (SFL.LVar (SFL.Ident name)) -> EVar name
+    SFL.ELiteral (SFL.LTConstr (SFL.UIdent name) args) -> EConstr name ((tcExp . (\(SFL.ETCElem e) -> e))<$> args)
 
 fapp :: String -> [SFL.Exp] -> Exp
 fapp name exps = mulEApp (EVar name) (tcExp <$> exps)
