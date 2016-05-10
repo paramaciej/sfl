@@ -22,6 +22,7 @@ MCase.      MatchCase ::= "case" PatExp "=>" Exp;
 
 EIf.        Exp ::= "if" Exp "then" Exp "else" Exp;
 ELet.       Exp ::= "let" PatExp "=" Exp "in" Exp;
+ELetRec.    Exp ::= "let" "rec" Ident "=" Exp "in" Exp;
 
 PatIdent.   Pat ::= Ident;
 PatTCPat.   Pat ::= UIdent [Pat];

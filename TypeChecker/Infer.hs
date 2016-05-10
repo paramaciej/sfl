@@ -1,4 +1,4 @@
-{-#LANGUAGE LambdaCase#-}
+{-# LANGUAGE LambdaCase #-}
 module TypeChecker.Infer where
 
 import qualified AbsSFL as SFL
@@ -15,8 +15,9 @@ tcExp = \case
         SFL.FBodyExp e -> ELam name (tcExp e)
 
 --    SFL.EMatch
-    SFL.EIf cond e1 e2 -> mulEApp (EVar "_if") (tcExp <$> [cond, e1, e2])
+    SFL.EIf cond e1 e2 -> EIf (tcExp cond) (tcExp e1) (tcExp e2)
     SFL.ELet patExp e body -> ELet patExp (tcExp e) (tcExp body)
+    SFL.ELetRec (SFL.Ident name) e body -> ELetRec name (tcExp e) (tcExp body)
     SFL.ETuple e es -> EConstr "tuple" (tcExp <$> e:es)
     SFL.ECons e1 e2 -> EApp (EApp (EVar "cons") (tcExp e1)) (tcExp e2)
     SFL.EOr e1 e2 -> fapp "_or" [e1, e2]

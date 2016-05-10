@@ -18,8 +18,10 @@ data Exp
     | EApp Exp Exp
     | ELam String Exp
     | ELet SFL.PatExp Exp Exp
+    | ELetRec String Exp Exp
     | EInt Integer
     | EBool Bool
+    | EIf Exp Exp Exp
     | EConstr String [Exp] deriving Show
 
 

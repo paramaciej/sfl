@@ -1,4 +1,4 @@
-{-#LANGUAGE LambdaCase#-}
+{-# LANGUAGE LambdaCase #-}
 
 module Interpreter.Types where
 
@@ -18,7 +18,7 @@ type ValEnv = Map String Value
 type VE = ReaderT ValEnv IO
 
 curryV :: ((Value, Value) -> VE Value) -> Value
-curryV fun = VFun (\x -> return $ VFun (curry fun x))
+curryV fun = VFun (return . VFun . curry fun)
 
 
 instance Show Value where
@@ -26,6 +26,6 @@ instance Show Value where
         VInt n -> show n
         VBool b -> show b
         VList list -> show list
-        VTuple tuple -> "(" ++ (intercalate ", " $ Prelude.map show tuple) ++ ")"
+        VTuple tuple -> "(" ++ intercalate ", " (Prelude.map show tuple) ++ ")"
         VFun _ -> "funkcja"
         VConstr name vals -> "V" ++ name ++ ": " ++ show vals

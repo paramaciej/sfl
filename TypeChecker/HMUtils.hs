@@ -1,11 +1,10 @@
-{-#LANGUAGE LambdaCase#-}
+{-# LANGUAGE LambdaCase #-}
 module TypeChecker.HMUtils where
 
 import Control.Monad.Reader
 import Data.IORef
 import Data.Maybe
 import TypeChecker.Types
-import qualified AbsSFL as SFL
 
 
 zonk :: Type -> IO Type
@@ -50,10 +49,10 @@ showType t = do
 
 mulEApp :: Exp -> [Exp] -> Exp
 mulEApp _ [] = error "Application with no arguments!"
-mulEApp fun args = foldl (\acc arg -> EApp acc arg) fun args
+mulEApp fun args = foldl EApp fun args
 
 tApp :: Type -> Type -> Type
 tApp arg ret = TypeConstr "->" [arg, ret]
 
 mulTApp :: [Type] -> Type -> Type
-mulTApp args ret = foldr (\arg acc -> tApp arg acc) ret args
+mulTApp args ret = foldr tApp ret args

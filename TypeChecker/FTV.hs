@@ -1,5 +1,5 @@
-{-#LANGUAGE TypeSynonymInstances#-}
-{-#LANGUAGE FlexibleInstances#-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module TypeChecker.FTV where
 

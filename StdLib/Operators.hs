@@ -4,7 +4,6 @@ import TypeChecker.Types
 import TypeChecker.HMUtils
 import Interpreter.Types
 import Data.Map
-import Control.Monad.Reader
 
 
 ops :: IO Env
@@ -33,7 +32,7 @@ ops = do
 
         ("[]", Forall [fr] $ TypeConstr "list" [TypeVar fr]),
         ("cons", Forall [fr] $ mulTApp [TypeVar fr, TypeConstr "list" [TypeVar fr]] (TypeConstr "list" [TypeVar fr])),
-        ("_if", Forall [fr] $ mulTApp [tBool, TypeVar fr, TypeVar fr] (TypeVar fr))
+        ("_infer_if", Forall [fr] $ mulTApp [tBool, TypeVar fr, TypeVar fr] (TypeVar fr))
         ]
 
 --funIntIntInt :: (Integer -> Integer -> Integer) -> Value
@@ -58,8 +57,7 @@ eee = fromList [
     ("_neq", funIntIntBool (/=)),
 
     ("[]", VList []),
-    ("cons", curryV (\(x, VList xs) -> return $ VList (x:xs))),
-    ("_if", VFun (\(VBool b) -> return $ curryV (\(t, f) -> return $ if b then t else f)))
+    ("cons", curryV (\(x, VList xs) -> return $ VList (x:xs)))
     ]
   where
     funIntIntInt fun = curryV (\(VInt a, VInt b) -> return $ VInt (fun a b))

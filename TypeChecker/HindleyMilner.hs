@@ -1,4 +1,4 @@
-{-#LANGUAGE LambdaCase#-}
+{-# LANGUAGE LambdaCase #-}
 
 module TypeChecker.HindleyMilner where
 
@@ -7,11 +7,9 @@ import Data.List
 import Control.Monad.Reader
 import qualified Data.Map as M
 import qualified AbsSFL as SFL
-import Data.Maybe
 import TypeChecker.Types
 import TypeChecker.FTV
 import TypeChecker.HMUtils
-
 
 infer :: Exp -> Tc Type
 infer (EVar x) = do
@@ -39,13 +37,42 @@ infer (ELet patExp e body) = do
     modifications <- inferPatExp patExp t
     local modifications $ infer body
 
-infer (EInt _) = return $ tInt
+infer (ELetRec name e body) = do
+    recModifications <- yyyInfer name
+    t <- local recModifications $ infer e
+    ts <- generalize t
+    local (M.insert name ts) $ infer body
 
-infer (EBool _) = return $ tBool
+
+infer (EInt _) = return tInt
+
+infer (EBool _) = return tBool
+
+infer (EIf cond eTrue eFalse) = infer (mulEApp (EVar "_infer_if") [cond, eTrue, eFalse])
 
 infer (EConstr name es) = do
     x <- mapM infer es
     return $ TypeConstr name x
+
+yyyInfer :: String -> Tc (Env -> Env)
+yyyInfer name = do
+    fr <- fresh
+    return (M.insert name (Forall [] $ TypeVar fr))
+
+xxxInfer :: SFL.PatExp -> Tc (Env -> Env)
+xxxInfer = \case
+    SFL.PETuple pe1 pe2 -> combine pe1 pe2
+    SFL.PECons pe1 pe2 -> combine pe1 pe2
+    SFL.PEPat (SFL.PatIdent (SFL.Ident name)) -> do
+        fr <- fresh
+        return (M.insert name (Forall [] $ TypeVar fr))
+    SFL.PEPat (SFL.PatTCPat (SFL.UIdent name) pats) -> error "TCPAT!" -- TODO
+    SFL.PEPat SFL.PatWild -> return id
+  where
+    combine pe1 pe2 = do
+        i1 <- xxxInfer pe1
+        i2 <- xxxInfer pe2
+        return (i1 . i2)
 
 inferPatExp :: SFL.PatExp -> Type -> Tc (Env -> Env)
 inferPatExp patExp ttt = do
@@ -62,12 +89,12 @@ inferPatExp patExp ttt = do
                 z1 <- inferPatExp pe1 lt
                 z2 <- inferPatExp pe2 $ TypeConstr "list" [lt]
                 return (z1 . z2)
-            _ -> error $ "wrong cons matching"
+            _ -> error "wrong cons matching"
         SFL.PEPat (SFL.PatIdent (SFL.Ident name)) -> do
             ts <- generalize zonked
             return (M.insert name ts)
         SFL.PEPat (SFL.PatTCPat (SFL.UIdent name) pats) -> error "TCPAT"
-        SFL.PEPat (SFL.PatWild) -> return id
+        SFL.PEPat SFL.PatWild -> return id
 
 
 instantiate :: TypeScheme -> Tc Type
@@ -92,8 +119,7 @@ unify (TypeConstr name args) (TypeConstr name' args')
     | otherwise = fail $ "nie umim w inferowanie: " ++ name ++ " vs. " ++ name'
 
 unifyVar :: TypeVar -> Type -> Tc ()
-unifyVar ioref t = do
-    liftIO (readIORef ioref) >>= \case
+unifyVar ioref t = liftIO (readIORef ioref) >>= \case
         Just context -> unify context t
         Nothing -> do
             zonked <- liftIO $ zonk t

@@ -1,4 +1,4 @@
-{-#LANGUAGE LambdaCase#-}
+{-# LANGUAGE LambdaCase #-}
 module Interpreter.PatEval where
 
 import Interpreter.Types
@@ -20,5 +20,5 @@ patEval patExp val = case patExp of
             return (ev1 . ev2)
         _ -> error $ "wrong value for list: " ++ show val
     PEPat (PatIdent (Ident name)) -> return $ insert name val
-    -- PatTCPat
+--     PatTCPat
     PEPat (PatWild) -> return id

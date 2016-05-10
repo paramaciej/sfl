@@ -1,12 +1,11 @@
-{-#LANGUAGE LambdaCase#-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecursiveDo #-}
 
 module Interpreter.Evaluator where
 
 import Control.Monad.Reader
 import TypeChecker.Types
-import TypeChecker.HMUtils
 import qualified Data.Map as M
-import StdLib.Operators
 import Interpreter.Types
 import Interpreter.PatEval
 
@@ -24,14 +23,23 @@ eval = \case
                 arg <- eval e2
                 fun arg
             _ -> error "GUPIA APPL."
-    ELam name body -> do
-        return $ VFun (\xx -> local (M.insert name xx) $ eval body)
+    ELam name body -> return $ VFun (\xx -> local (M.insert name xx) $ eval body)
     ELet patExp e body -> do
         val <- eval e
         modifications <- patEval patExp val
         local modifications $ eval body
+    ELetRec name e body -> do
+        rec val <- local (M.insert name val) $ eval e
+        local (M.insert name val) $ eval body
+
     EInt n -> return $ VInt n
     EBool b -> return $ VBool b
+    EIf cond eTrue eFalse -> do
+        isTrue <- eval cond
+        case isTrue of
+            VBool True -> eval eTrue
+            VBool False -> eval eFalse
+            _ -> error "conditional doesn't evaluate to Bool!"
     EConstr "tuple" exps -> do
         vals <- mapM eval exps
         return $ VTuple vals
