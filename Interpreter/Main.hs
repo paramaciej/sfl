@@ -13,16 +13,29 @@ import StdLib.Operators
 import Data.Map
 import Interpreter.Types
 import Interpreter.Utils
-
+import System.Environment
 
 
 main :: IO ()
 main = do
-    putStrLn "SFL -- Simple Functional Language\n (:q to quit)"
+    args <- getArgs
     stdTypes <- ops
-    _ <- runStateT userLines (PrEnv stdTypes eee)
-    putStrLn "Goodbye."
+    case args of
+        [] -> do
+            putStrLn "SFL -- Simple Functional Language\n (:q to quit)"
+            _ <- runStateT userLines (PrEnv stdTypes eee)
+            putStrLn "Goodbye."
+        (filename:_) -> do
+            _ <- runStateT (fromFile filename) (PrEnv stdTypes eee)
+            return ()
 
+
+fromFile :: String -> PrSt ()
+fromFile filename = do
+    program <- liftIO $ readFile filename
+    case pProgram (myLexer program) of
+        Ok (Prog stmts) -> mapM_ handleStmt stmts
+        Bad str -> liftIO $ putStrLn $ "Error on parsing source file: " ++ str
 
 
 userLines :: PrSt ()
@@ -46,10 +59,9 @@ handleStmt stmt = do
     case stmt of
         ExpStmt expStmt -> printExp expStmt
 
---        TypeDecl (UIdent name) idents tcs -> error "" -- TODO
+--        TypeDecl (UIdent name) idents tcs -> error "" --
 
         Function name arg args body -> do
-            liftIO $ putStrLn $ show $ tcExp (lamCurry (arg:args) body)
             handleStmt (Value name (SFL.ELetRec name (lamCurry (arg:args) body) (SFL.ELiteral $ SFL.LVar name)))
           where
             lamCurry [a] b = SFL.ELam a b
