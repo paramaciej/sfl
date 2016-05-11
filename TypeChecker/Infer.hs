@@ -3,10 +3,7 @@ module TypeChecker.Infer where
 
 import qualified AbsSFL as SFL
 import TypeChecker.Types
-import Control.Monad.Reader
-import TypeChecker.HindleyMilner
 import TypeChecker.HMUtils
-import StdLib.Operators
 
 tcExp :: SFL.Exp -> Exp
 tcExp = \case
@@ -14,7 +11,7 @@ tcExp = \case
         SFL.FBodyMatch _ -> error "not yet implemented!"  -- TODO
         SFL.FBodyExp e -> ELam name (tcExp e)
 
-    SFL.EMatch e (SFL.MBody cases) -> EMatch (tcExp e) cases
+    SFL.EMatch e (SFL.MBody cases) -> EMatch (tcExp e) (map (\(SFL.MCase patExp body) -> (patExp, tcExp body)) cases)
     SFL.EIf cond e1 e2 -> EIf (tcExp cond) (tcExp e1) (tcExp e2)
     SFL.ELet patExp e body -> ELet patExp (tcExp e) (tcExp body)
     SFL.ELetRec (SFL.Ident name) e body -> ELetRec name (tcExp e) (tcExp body)
@@ -44,8 +41,3 @@ tcExp = \case
 
 fapp :: String -> [SFL.Exp] -> Exp
 fapp name exps = mulEApp (EVar name) (tcExp <$> exps)
-
-inferredType :: SFL.Exp -> IO Type
-inferredType e = do
-    env <- StdLib.Operators.ops
-    runReaderT (infer $ tcExp e) env

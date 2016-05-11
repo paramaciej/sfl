@@ -35,8 +35,6 @@ ops = do
         ("_infer_if", Forall [fr] $ mulTApp [tBool, TypeVar fr, TypeVar fr] (TypeVar fr))
         ]
 
---funIntIntInt :: (Integer -> Integer -> Integer) -> Value
-
 eee :: (Map String Value)
 eee = fromList [
     ("add", funIntIntInt (+)),

@@ -16,7 +16,7 @@ infer (EVar x) = do
     mts <- asks $ M.lookup x
     case mts of
         Just ts -> instantiate ts
-        Nothing -> error "brak zmiennej!"
+        Nothing -> error $ "'" ++ x ++ "' undefined." -- FIXME
 
 infer (EApp e1 e2) = do
     t1 <- infer e1
@@ -38,14 +38,8 @@ infer (ELet patExp e body) = do
     local modifications $ infer body
 
 infer (ELetRec name e body) = do
-    recModifications <- recMod
-    t <- local recModifications $ infer e
-    ts <- generalize t
-    local (M.insert name ts) $ infer body
-  where
-    recMod  = do
-        fr <- fresh
-        return (M.insert name (Forall [] $ TypeVar fr))
+    modifier <- letRecEnvModifier name e
+    local modifier $ infer body
 
 
 infer (EInt _) = return tInt
@@ -53,6 +47,19 @@ infer (EInt _) = return tInt
 infer (EBool _) = return tBool
 
 infer (EIf cond eTrue eFalse) = infer (mulEApp (EVar "_infer_if") [cond, eTrue, eFalse])
+
+infer (EMatch e cases) = do
+    t <- infer e
+    let aaa = \(patExp, caseBody) -> do
+        mods <- inferPatExp patExp t
+        local mods $ infer caseBody
+
+    modifiers <- mapM aaa cases
+    case modifiers of
+        (m:ms) -> do
+            mapM_ (unify m) ms
+            return m
+        [] -> error "no cases in match!" -- FIXME
 
 infer (EConstr name es) = do
     x <- mapM infer es
@@ -68,18 +75,31 @@ inferPatExp patExp ttt = do
                 z1 <- inferPatExp pe1 t1
                 z2 <- inferPatExp pe2 t2
                 return (z1 . z2)
-            _ -> error "wrong tuple matching"
+            _ -> error "wrong tuple matching" -- FIXME
         SFL.PECons pe1 pe2 -> case zonked of
             TypeConstr "list" [lt] -> do
                 z1 <- inferPatExp pe1 lt
                 z2 <- inferPatExp pe2 $ TypeConstr "list" [lt]
                 return (z1 . z2)
-            _ -> error "wrong cons matching"
-        SFL.PEPat (SFL.PatLiteral (SFL.LVar (SFL.Ident name))) -> do
+            _ -> error "wrong cons matching" -- FIXME
+        SFL.PEPat (SFL.PatVar (SFL.Ident name)) -> do
             ts <- generalize zonked
             return (M.insert name ts)
-        SFL.PEPat (SFL.PatLiteral (SFL.LTConstr (SFL.UIdent name) pats)) -> error "TCPAT"
+        SFL.PEPat (SFL.PatTConstr (SFL.UIdent name) pats) -> do
+            case zonked of
+                TypeConstr n args -> if n == name
+                    then do
+                        zs <- mapM (\(p, a) -> inferPatExp p a) (zip pats args)
+                        let composed = comp zs where
+                            comp [] = id
+                            comp (h:t) = h . (comp t)
+                        return  composed
+                    else error "constructor names mismatch!" -- FIXME
+                _ -> error "wrong type constr."
         SFL.PEPat SFL.PatWild -> return id
+        SFL.PEPat SFL.PatTrue -> return id
+        SFL.PEPat SFL.PatFalse -> return id
+        SFL.PEPat (SFL.PatInt _) -> return id
 
 
 instantiate :: TypeScheme -> Tc Type
@@ -112,3 +132,15 @@ unifyVar ioref t = liftIO (readIORef ioref) >>= \case
                 fail "occurs check failed <corner!?>"
             else
                 liftIO $ writeIORef ioref (Just zonked)
+
+
+letRecEnvModifier :: String -> Exp -> Tc (Env -> Env)
+letRecEnvModifier name e = do
+    rm <- recMod
+    t <- local rm $ infer e
+    ts <- generalize t
+    return $ M.insert name ts
+  where
+    recMod = do
+        fr <- fresh
+        return (M.insert name (Forall [] $ TypeVar fr))

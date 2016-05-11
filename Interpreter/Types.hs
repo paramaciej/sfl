@@ -2,9 +2,15 @@
 
 module Interpreter.Types where
 
+import Data.List
 import Data.Map
 import Control.Monad.Reader
-import Data.List
+import Control.Monad.State
+import TypeChecker.Types
+
+data ProgramEnv = PrEnv {types :: Env, values :: ValEnv}
+type PrSt = StateT ProgramEnv IO
+
 
 data Value
     = VInt Integer

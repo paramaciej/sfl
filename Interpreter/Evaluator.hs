@@ -15,15 +15,19 @@ eval :: Exp -> VE Value
 eval = \case
     EVar name -> do
         m <- ask
-        return $ m M.! name
+        case M.lookup name m of
+            Just v -> return v
+            Nothing -> error $ "'" ++ name ++ "' not found. :/" -- FIXME
     EApp e1 e2 -> do
         val <- eval e1
         case val of
             VFun fun -> do
                 arg <- eval e2
                 fun arg
-            _ -> error "GUPIA APPL."
-    ELam name body -> return $ VFun (\xx -> local (M.insert name xx) $ eval body)
+            _ -> error "a non-function value used as a function in application!"
+    ELam name body -> do
+        env <- ask
+        return $ VFun (\xx -> local ((M.insert name xx) . (const env)) $ eval body)
     ELet patExp e body -> do
         val <- eval e
         modifications <- patEval patExp val
@@ -40,6 +44,8 @@ eval = \case
             VBool True -> eval eTrue
             VBool False -> eval eFalse
             _ -> error "conditional doesn't evaluate to Bool!"
+--    EMatch e cases -> do
+--        val <- eval e
     EConstr "tuple" exps -> do
         vals <- mapM eval exps
         return $ VTuple vals

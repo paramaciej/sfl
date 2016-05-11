@@ -22,7 +22,7 @@ data Exp
     | EInt Integer
     | EBool Bool
     | EIf Exp Exp Exp
-    | EMatch Exp [SFL.MatchCase]
+    | EMatch Exp [(SFL.PatExp, Exp)]
     | EConstr String [Exp] deriving Show
 
 
