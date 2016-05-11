@@ -18,7 +18,8 @@ inferredType e = do
 typeStr :: SFL.Exp -> PrSt String
 typeStr e = do
     t <- inferredType e
-    liftIO $ showType t
+    zonked <- liftIO $ zonk t
+    liftIO $ showType zonked
 
 evaluatedExp :: SFL.Exp -> PrSt Value
 evaluatedExp e = do
@@ -27,8 +28,8 @@ evaluatedExp e = do
 
 showExp :: SFL.Exp -> PrSt String
 showExp e = do
-    val <- evaluatedExp e
     typ <- typeStr e
+    val <- evaluatedExp e
     return $ show val ++ " : " ++ typ
 
 printExp :: SFL.Exp -> PrSt ()

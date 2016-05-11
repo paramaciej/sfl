@@ -76,12 +76,16 @@ inferPatExp patExp ttt = do
                 z2 <- inferPatExp pe2 t2
                 return (z1 . z2)
             _ -> error "wrong tuple matching" -- FIXME
-        SFL.PECons pe1 pe2 -> case zonked of
-            TypeConstr "list" [lt] -> do
-                z1 <- inferPatExp pe1 lt
-                z2 <- inferPatExp pe2 $ TypeConstr "list" [lt]
-                return (z1 . z2)
-            _ -> error "wrong cons matching" -- FIXME
+        SFL.PECons pe1 pe2 -> do
+            liftIO $ putStrLn $ "no elo: " ++ show pe1 ++ "/" ++ show pe2
+            xx <- liftIO $ showType zonked
+            liftIO $ putStrLn $ "typ: " ++ xx
+            case zonked of
+                TypeConstr "list" [lt] -> do
+                    z1 <- inferPatExp pe1 lt
+                    z2 <- inferPatExp pe2 $ TypeConstr "list" [lt]
+                    return (z1 . z2)
+                _ -> error "wrong cons matching" -- FIXME
         SFL.PEPat (SFL.PatVar (SFL.Ident name)) -> do
             ts <- generalize zonked
             return (M.insert name ts)
@@ -121,7 +125,7 @@ unify (TypeVar tv) t' = unifyVar tv t'
 unify t (TypeVar tv') = unifyVar tv' t
 unify (TypeConstr name args) (TypeConstr name' args')
     | name == name' = zipWithM_ unify args args'
-    | otherwise = fail $ "nie umim w inferowanie: " ++ name ++ " vs. " ++ name'
+    | otherwise = fail $ "Type mismatch: " ++ name ++ " vs. " ++ name'
 
 unifyVar :: TypeVar -> Type -> Tc ()
 unifyVar ioref t = liftIO (readIORef ioref) >>= \case

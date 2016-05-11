@@ -80,3 +80,5 @@ separator nonempty MatchCase ";";
 terminator Ident "";
 terminator Pat "";
 terminator nonempty Exp9 "";
+
+comment "#";

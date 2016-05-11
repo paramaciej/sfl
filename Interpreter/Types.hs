@@ -33,5 +33,5 @@ instance Show Value where
         VBool b -> show b
         VList list -> show list
         VTuple tuple -> "(" ++ intercalate ", " (Prelude.map show tuple) ++ ")"
-        VFun _ -> "funkcja"
+        VFun _ -> "function"
         VConstr name vals -> "V" ++ name ++ ": " ++ show vals
