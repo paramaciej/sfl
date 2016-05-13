@@ -6,6 +6,9 @@ import qualified Data.Map as M
 import qualified AbsSFL as SFL
 
 type TypeVar = IORef (Maybe Type)
+
+
+
 data Type = TypeVar TypeVar | TypeConstr String [Type]
 
 data TypeScheme = Forall [TypeVar] Type

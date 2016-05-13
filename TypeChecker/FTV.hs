@@ -16,12 +16,20 @@ instance HasFTV TypeVar where
 
 instance HasFTV Type where
     ftv (TypeVar var) = ftv var
-    ftv (TypeConstr _ ts) = ftv ts
+    ftv (TypeConstr name ts) = do
+        xx <- ftv ts
+--        liftIO $ putStrLn $ "FTV TYPE: " ++ name ++ ",  len: " ++ show (length xx)
+        if length xx == 2 then
+            let a:b:[] = xx in liftIO $ putStrLn $ "\t!!! FTV 2: " ++ show (a==b)
+        else liftIO $ putStr ""
+        return xx
 
 instance HasFTV a => HasFTV [a] where
     ftv args = (nub . concat) <$> mapM ftv args
 
 instance HasFTV TypeScheme where
     ftv (Forall tvs t) = do
+--        liftIO $ putStrLn $ "FTV TYPE SCHEME! \ttvs:" ++ show (length tvs)
         tftv <- ftv t
+--        liftIO $ putStrLn $ "\t\t\tftv:" ++ show (length tftv)
         return $ tftv \\ tvs

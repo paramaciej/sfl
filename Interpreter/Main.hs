@@ -45,7 +45,17 @@ userLines = do
         case line of
             ":v" -> do
                 vals <- gets values
-                liftIO $ putStrLn $ show vals
+                ttt <- gets types
+
+                let aux = \(name, val) -> name ++ " -> " ++ show val
+                liftIO $ putStrLn $ unlines $ Prelude.map aux $ assocs vals
+                let aaa = \(name, t) -> do
+                    xx <- showSchemeX t
+                    liftIO $ putStrLn $ name ++ " ungeneralized: " ++ xx
+                    tt <- instantiate t
+                    txxx <- showScheme tt
+                    liftIO $ putStrLn $ name ++ " of type " ++ txxx
+                liftIO $ runReaderT (mapM_ aaa $ assocs ttt) ttt
                 userLines
             ":q" -> return ()
             _ -> do
@@ -71,7 +81,11 @@ handleStmt stmt = do
         Value (Ident name) e -> do
             PrEnv typSt valSt <- get
             t <- inferredType e
-            let ts = Forall [] t
+            ts <- liftIO $ runReaderT (generalize t) typSt
+            sss <- liftIO $ runReaderT (showScheme t) typSt
+            liftIO $ putStrLn $ "VALUE>>>>> " ++ sss
+            sxxx <- liftIO $ runReaderT (showSchemeX ts) typSt
+            liftIO $ putStrLn $ "VALUE<<<<<<<<< " ++ sxxx
             val <- evaluatedExp e
             put $ PrEnv (insert name ts typSt) (insert name val valSt)
             printExp e
