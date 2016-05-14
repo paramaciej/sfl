@@ -18,6 +18,7 @@ patEval patExp val = case patExp of
             ev1 <- patEval pe1 v
             ev2 <- patEval pe2 (VList vs)
             return (ev1 . ev2)
+        VList [] -> error $ "matching with empty list!" -- FIXME
         _ -> error $ "wrong value for list: " ++ show val -- FIXME
     PEPat (PatVar (Ident name)) -> return $ insert name val
     PEPat (PatTConstr (UIdent name) pats) -> case val of
