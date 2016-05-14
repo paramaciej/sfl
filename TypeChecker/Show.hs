@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module TypeChecker.Show where
 
 import TypeChecker.Types
@@ -5,41 +6,34 @@ import Control.Monad.Reader
 import TypeChecker.Utils
 import Data.Maybe
 
---showType :: Type -> IO String
---showType t = do
---    zonked <- zonk t
---    case zonked of
---        TypeConstr name ts -> do
---            tsStr <- mapM showType ts
---            return $ case name of
---                "->" -> case tsStr of
---                    [left, right] -> left ++ " -> " ++ right
---                    _ -> error "Wrong number of arguments in application!"
---                "list" -> case tsStr of
---                    [str] -> "[" ++ str ++ "]"
---                    _ -> error "Wrong number of arguments in list type!"
---                _ -> case tsStr of
---                    [] -> name
---                    _ -> "(" ++ name ++ concatMap (" " ++) tsStr ++ ")"
---        TypeVar tv -> return $ show tv
+import System.Console.ANSI
 
+surroundSGR :: [SGR] -> String -> String
+surroundSGR sgrs str = setSGRCode sgrs ++ str ++ setSGRCode [Reset]
 
-xxx :: Type -> (ReaderT [(TypeVar, String)] IO) String
-xxx t = do
-    zonked <- liftIO $ zonk t
-    case zonked of
+auxShowType :: Type -> (ReaderT [(TypeVar, String)] IO) String
+auxShowType t = do
+    liftIO (zonk t) >>= \case
         TypeConstr name ts -> do
-            tsStr <- mapM xxx ts
-            return $ case name of
-                "->" -> case tsStr of
-                    [left, right] -> left ++ " -> " ++ right
-                    _ -> error "Wrong number of arguments in application!"
-                "list" -> case tsStr of
-                    [str] -> "[" ++ str ++ "]"
-                    _ -> error "Wrong number of arguments in list type!"
-                _ -> case tsStr of
-                    [] -> name
-                    _ -> "(" ++ name ++ concatMap (" " ++) tsStr ++ ")"
+            tsStr <- mapM auxShowType ts
+            return $ showConstr name tsStr
+          where
+            showConstr = \case
+                "->" -> \case
+                   [left, right] -> left ++ " -> " ++ right
+                   _ -> error "Wrong number of arguments in application!"
+                "list" -> \case
+                   [str] -> "[" ++ str ++ "]"
+                   _ -> error "Wrong number of arguments in list type!"
+                "Int" -> \case
+                   [] -> surroundSGR [SetColor Foreground Vivid Magenta] "Int"
+                   _ -> error "Wrong number of arguments for Int!"
+                "Bool" -> \case
+                    [] -> surroundSGR [SetColor Foreground Vivid Cyan] "Bool"
+                    _ -> error "Wrong number of aeguments for Bool!"
+                _ -> \case
+                   [] -> name
+                   args -> "(" ++ name ++ concatMap (" " ++) args ++ ")"
         TypeVar tv -> do
             yyy <- asks $ lookup tv
             return $ fromMaybe "unknown" yyy
@@ -50,4 +44,4 @@ showType t = do
     showScheme ts
 
 showScheme :: TypeScheme -> Tc String
-showScheme (Forall tvs tt) = liftIO $ runReaderT (xxx tt) (zip tvs (map (: []) ['a'..]))
+showScheme (Forall tvs tt) = liftIO $ runReaderT (auxShowType tt) (zip tvs (map (: []) ['a'..]))

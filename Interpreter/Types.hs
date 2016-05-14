@@ -8,6 +8,8 @@ import Control.Monad.Reader
 import Control.Monad.Except
 import Control.Monad.State
 import TypeChecker.Types
+import TypeChecker.Show
+import System.Console.ANSI
 
 data ProgramEnv = PrEnv {types :: Env, values :: ValEnv}
 type PrSt = ExceptT String (StateT ProgramEnv IO)
@@ -30,9 +32,9 @@ curryV fun = VFun (return . VFun . curry fun)
 
 instance Show Value where
     show = \case
-        VInt n -> show n
-        VBool b -> show b
+        VInt n -> surroundSGR [SetColor Foreground Dull Magenta] $ show n
+        VBool b -> surroundSGR [SetColor Foreground Dull Cyan] $ show b
         VList list -> show list
         VTuple tuple -> "(" ++ intercalate ", " (Prelude.map show tuple) ++ ")"
         VFun _ -> "function"
-        VConstr name vals -> "V" ++ name ++ ": " ++ show vals
+        VConstr name vals -> "V" ++ surroundSGR [SetColor Foreground Dull Green] name ++ ": " ++ show vals
