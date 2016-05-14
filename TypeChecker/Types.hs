@@ -3,6 +3,7 @@ module TypeChecker.Types where
 import Data.IORef
 import Control.Monad.Reader
 import Control.Monad.Except
+import Exceptions.Types
 import qualified Data.Map as M
 import qualified AbsSFL as SFL
 
@@ -19,7 +20,7 @@ data Type = TypeVar TypeVar | TypeConstr String [Type]
 data TypeScheme = Forall [TypeVar] Type
 
 data Env = Env {maxIORef :: IORef Int, schemeMap :: M.Map String TypeScheme}
-type Tc = ExceptT String (ReaderT Env IO)
+type Tc = ExceptT TypeException (ReaderT Env IO)
 
 data Exp
     = EVar String

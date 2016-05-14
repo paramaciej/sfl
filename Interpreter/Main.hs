@@ -22,7 +22,7 @@ import System.IO
 defState :: IO ProgramEnv
 defState = do
     ref <- newIORef 0
-    stdTypes <- runReaderT (runExceptT ops) (Env ref empty) >>= either fail return
+    stdTypes <- runReaderT (runExceptT ops) (Env ref empty) >>= either (fail . show) return
     return $ PrEnv stdTypes eee
 
 main :: IO ()
@@ -68,17 +68,14 @@ showValues = do
     let combined = intersectionWith (,) (values st) (schemeMap $ types st)
     let aux (name, (v, t)) = do
         tStr <- showScheme t
-        liftIO $ putStrLn $ name ++ " = " ++ show v ++ " : " ++ tStr
-    liftIO $ runReaderT (runExceptT (mapM_ aux $ assocs combined)) (types st) >>= either fail return
+        liftIO $ putStrLn $ name ++ " \t= " ++ show v ++ " : " ++ tStr
+    liftIO $ runReaderT (runExceptT (mapM_ aux $ assocs combined)) (types st) >>= either (fail .show) return
 
 
 handleStmt :: Stmt -> PrSt ()
 handleStmt = \case
-        ExpStmt expStmt -> do
-            x <- catchError (printExp expStmt) aux
-            return x
-          where
-            aux str = liftIO $ hPutStrLn stderr str
+        ExpStmt expStmt -> catchError (printExp expStmt) aux
+            where aux str = liftIO $ hPutStrLn stderr str
 
 --        TypeDecl (UIdent name) idents tcs -> error "" --
 
@@ -92,7 +89,7 @@ handleStmt = \case
         Value (Ident name) e -> do
             PrEnv typSt valSt <- get
             t <- inferredType e
-            ts <- liftIO $ runReaderT (runExceptT $ generalize t) typSt >>= either fail return
+            ts <- liftIO $ runReaderT (runExceptT $ generalize t) typSt >>= either (fail . show) return
             val <- evaluatedExp e
             put $ PrEnv (envInsert name ts typSt) (insert name val valSt)
             printExp e

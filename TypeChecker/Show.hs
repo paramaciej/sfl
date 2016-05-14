@@ -12,31 +12,40 @@ surroundSGR :: [SGR] -> String -> String
 surroundSGR sgrs str = setSGRCode sgrs ++ str ++ setSGRCode [Reset]
 
 auxShowType :: Type -> (ReaderT [(TypeVar, String)] IO) String
-auxShowType t = do
-    liftIO (zonk t) >>= \case
+auxShowType t = liftIO (zonk t) >>= \case
         TypeConstr name ts -> do
-            tsStr <- mapM auxShowType ts
-            return $ showConstr name tsStr
+            zonkedTs <- mapM (liftIO . zonk) ts
+            showConstr name zonkedTs
           where
             showConstr = \case
                 "->" -> \case
-                   [left, right] -> left ++ " -> " ++ right
-                   _ -> error "Wrong number of arguments in application!"
+                    [left, right] -> do
+                        leftStr <- auxShowType left
+                        rightStr <- auxShowType right
+                        return $ (case left of
+                            TypeConstr "->" _ -> "(" ++ leftStr ++ ")"
+                            _ -> leftStr)
+                            ++ surroundSGR [SetColor Foreground Vivid Yellow] " -> " ++ rightStr
+                    _ -> error "Wrong number of arguments in application!"
                 "list" -> \case
-                   [str] -> "[" ++ str ++ "]"
-                   _ -> error "Wrong number of arguments in list type!"
+                    [t'] -> do
+                        tStr <- auxShowType t'
+                        return $ "[" ++ tStr ++ "]"
+                    _ -> error "Wrong number of arguments in list type!"
                 "Int" -> \case
-                   [] -> surroundSGR [SetColor Foreground Vivid Magenta] "Int"
-                   _ -> error "Wrong number of arguments for Int!"
+                    [] -> return $ surroundSGR [SetColor Foreground Vivid Magenta] "Int"
+                    _ -> error "Wrong number of arguments for Int!"
                 "Bool" -> \case
-                    [] -> surroundSGR [SetColor Foreground Vivid Cyan] "Bool"
+                    [] -> return $ surroundSGR [SetColor Foreground Vivid Cyan] "Bool"
                     _ -> error "Wrong number of aeguments for Bool!"
                 _ -> \case
-                   [] -> name
-                   args -> "(" ++ name ++ concatMap (" " ++) args ++ ")"
+                    [] -> return name
+                    args -> do
+                        argStrs <- mapM auxShowType args
+                        return $ "(" ++ name ++ concatMap (" " ++) argStrs ++ ")"
         TypeVar tv -> do
-            yyy <- asks $ lookup tv
-            return $ fromMaybe "unknown" yyy
+            t' <- asks $ lookup tv
+            return $ fromMaybe "unknown" t'
 
 showType :: Type -> Tc String
 showType t = do

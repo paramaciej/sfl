@@ -36,5 +36,5 @@ instance Show Value where
         VBool b -> surroundSGR [SetColor Foreground Dull Cyan] $ show b
         VList list -> show list
         VTuple tuple -> "(" ++ intercalate ", " (Prelude.map show tuple) ++ ")"
-        VFun _ -> "function"
+        VFun _ -> surroundSGR [SetColor Foreground Dull Yellow] "function"
         VConstr name vals -> "V" ++ surroundSGR [SetColor Foreground Dull Green] name ++ ": " ++ show vals
