@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 import AbsSFL as SFL
 import ParSFL
 import ErrM
@@ -16,7 +18,7 @@ import System.Environment
 
 defState :: IO ProgramEnv
 defState = do
-    ref <- newIORef 12
+    ref <- newIORef 0
     stdTypes <- runReaderT ops (Env ref empty)
     return $ PrEnv stdTypes eee
 
@@ -45,21 +47,10 @@ fromFile filename = do
 userLines :: PrSt ()
 userLines = do
         liftIO $ putStr "> "
-        line <- liftIO $ getLine
+        line <- liftIO getLine
         case line of
             ":v" -> do
-                vals <- gets values
-                ttt <- gets types
-
-                let aux = \(name, val) -> name ++ " -> " ++ show val
-                liftIO $ putStrLn $ unlines $ Prelude.map aux $ assocs vals
-                let aaa = \(name, t) -> do
-                    xx <- showSchemeX t
-                    liftIO $ putStrLn $ name ++ " ungeneralized: " ++ xx
-                    tt <- instantiate t
-                    txxx <- showScheme tt
-                    liftIO $ putStrLn $ name ++ " of type " ++ txxx
-                liftIO $ runReaderT (mapM_ aaa $ assocs (schemeMap ttt)) ttt
+                showValues
                 userLines
             ":q" -> return ()
             _ -> do
@@ -68,15 +59,24 @@ userLines = do
                     _ -> liftIO $ putStrLn "Error on parsing line."
                 userLines
 
+showValues :: PrSt ()
+showValues = do
+    st <- get
+    let combined = intersectionWith (curry id) (values st) (schemeMap $ types st)
+    let aux (name, (v, t)) = do
+        tStr <- showSchemeX t
+        liftIO $ putStrLn $ name ++ " = " ++ show v ++ " : " ++ tStr
+    liftIO $ runReaderT (mapM_ aux $ assocs combined) (types st)
+
+
 handleStmt :: Stmt -> PrSt ()
-handleStmt stmt = do
-    case stmt of
+handleStmt = \case
         ExpStmt expStmt -> printExp expStmt
 
 --        TypeDecl (UIdent name) idents tcs -> error "" --
 
-        Function name arg args body -> do
-            handleStmt (Value name (SFL.ELetRec name (lamCurry (arg:args) body) (SFL.ELiteral $ SFL.LVar name)))
+        Function name arg args body -> handleStmt
+            (Value name (SFL.ELetRec name (lamCurry (arg:args) body) (SFL.ELiteral $ SFL.LVar name)))
           where
             lamCurry [a] b = SFL.ELam a b
             lamCurry (a:as) b = SFL.ELam a $ FBodyExp $ lamCurry as b
@@ -86,10 +86,6 @@ handleStmt stmt = do
             PrEnv typSt valSt <- get
             t <- inferredType e
             ts <- liftIO $ runReaderT (generalize t) typSt
-            sss <- liftIO $ runReaderT (showScheme t) typSt
-            liftIO $ putStrLn $ "VALUE>>>>> " ++ sss
-            sxxx <- liftIO $ runReaderT (showSchemeX ts) typSt
-            liftIO $ putStrLn $ "VALUE<<<<<<<<< " ++ sxxx
             val <- evaluatedExp e
             put $ PrEnv (envInsert name ts typSt) (insert name val valSt)
             printExp e

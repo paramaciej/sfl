@@ -58,7 +58,7 @@ showType t = do
         TypeVar tv -> return $ show tv
 
 
-xxx :: Type -> (ReaderT ([(TypeVar, String)]) IO) String
+xxx :: Type -> (ReaderT [(TypeVar, String)] IO) String
 xxx t = do
     zonked <- liftIO $ zonk t
     case zonked of
@@ -76,9 +76,7 @@ xxx t = do
                     _ -> "(" ++ name ++ concatMap (" " ++) tsStr ++ ")"
         TypeVar tv -> do
             yyy <- asks $ lookup tv
-            return $ case yyy of
-                Just name -> "Fr." ++ name
-                Nothing -> "Fr.Unknown"
+            return $ fromMaybe "unknown" yyy
 
 showScheme :: Type -> Tc String
 showScheme t = do
@@ -86,9 +84,7 @@ showScheme t = do
     showSchemeX ts
 
 showSchemeX :: TypeScheme -> Tc String
-showSchemeX (Forall tvs tt) = do
-    tStr <- liftIO $ runReaderT (xxx tt) (zip tvs (map (\c -> [c]) ['a'..]))
-    return $ show (length tvs) ++  tStr
+showSchemeX (Forall tvs tt) = liftIO $ runReaderT (xxx tt) (zip tvs (map (: []) ['a'..]))
 
 
 

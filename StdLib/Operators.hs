@@ -25,6 +25,7 @@ ops = do
                 ("_and", binBoolOp),
                 ("_or", binBoolOp),
                 ("_not", Forall [] $ mulTApp [tBool] tBool),
+
                 ("_lt", cmpOp),
                 ("_lte", cmpOp),
                 ("_gt", cmpOp),
@@ -36,8 +37,7 @@ ops = do
                 ("cons", Forall [fr] $ mulTApp [TypeVar fr, TypeConstr "list" [TypeVar fr]] (TypeConstr "list" [TypeVar fr])),
                 ("_infer_if", Forall [fr] $ mulTApp [tBool, TypeVar fr, TypeVar fr] (TypeVar fr))
                 ]
-    local (\(Env m _) -> Env m o) (ask)
---    return $ Env 0 $
+    local (\(Env m _) -> Env m o) ask
 
 eee :: (Map String Value)
 eee = fromList [

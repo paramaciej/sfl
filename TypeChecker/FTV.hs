@@ -16,8 +16,7 @@ instance HasFTV TypeVar where
 
 instance HasFTV Type where
     ftv (TypeVar var) = ftv var
-    ftv (TypeConstr _ ts) = do
-        ftv ts
+    ftv (TypeConstr _ ts) = ftv ts
 
 instance HasFTV a => HasFTV [a] where
     ftv args = (nub . concat) <$> mapM ftv args

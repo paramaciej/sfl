@@ -27,7 +27,7 @@ eval = \case
             _ -> error "a non-function value used as a function in application!"
     ELam name body -> do
         env <- ask
-        return $ VFun (\xx -> local ((M.insert name xx) . (const env)) $ eval body)
+        return $ VFun (\xx -> local (M.insert name xx . const env) $ eval body)
     ELet patExp e body -> do
         val <- eval e
         modifications <- patEval patExp val

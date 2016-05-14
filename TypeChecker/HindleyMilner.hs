@@ -21,34 +21,17 @@ infer (EApp e1 e2) = do
     t2 <- infer e2
     b <- fresh
     let tb = TypeVar b
-
-
-    tstr1 <- showScheme t1
-    tstr2 <- showScheme t2
-    tbstr <- showScheme tb
-    liftIO $ putStrLn $ "APP BefUnify " ++ tstr1 ++ " | " ++ tstr2 ++ " ====> " ++ tbstr
-
     unify t1 (TypeConstr "->" [t2, tb])
-
-    tstr1 <- showScheme t1
-    tstr2 <- showScheme t2
-    tbstr <- showScheme tb
-    liftIO $ putStrLn $ "APP AftUnify " ++ tstr1 ++ " | " ++ tstr2 ++ " ====> " ++ tbstr
     return tb
 
 infer (ELam x e) = do
     b <- fresh
     let tb = TypeVar b
     t <- local (envInsert x (Forall [] tb)) $ infer e
-    se <- showScheme t
-    stb <- showScheme tb
-    liftIO $ putStrLn $ "ELAM! " ++ "from: " ++ stb ++ ", to: " ++ se
     return $ TypeConstr "->" [tb, t]
 
 infer (ELet patExp e body) = do
     t <- infer e
-    tstr <- showScheme t
-    liftIO $ putStrLn $ "ELET: " ++ tstr
     modifications <- inferPatExp patExp t
     local modifications $ infer body
 
@@ -92,22 +75,15 @@ inferPatExp patExp ttt = do
                 return (z1 . z2)
             _ -> error "wrong tuple matching" -- FIXME
         SFL.PECons pe1 pe2 -> do
-            liftIO $ putStrLn $ "no elo: " ++ show pe1 ++ "/" ++ show pe2
-            xx <- liftIO $ showType zonked
-            liftIO $ putStrLn $ "typ: " ++ xx
-            bbb <- fresh
-            let tbbb = TypeVar bbb
-            unify (TypeConstr "list" [tbbb]) zonked
-            xxxx <- liftIO $ showType zonked
+            free<- fresh
+            unify (TypeConstr "list" [TypeVar free]) zonked
             superZonk <- liftIO $ zonk zonked
             case superZonk of
                 TypeConstr "list" [lt] -> do
                     z1 <- inferPatExp pe1 lt
                     z2 <- inferPatExp pe2 $ TypeConstr "list" [lt]
                     return (z1 . z2)
-                TypeConstr x y -> do
-                    error $ "XXYssssXX: " ++ x
-                _ -> error $ "wrong cons matching:" ++ xxxx -- FIXME
+                _ -> error $ "wrong cons matching" -- FIXME
         SFL.PEPat (SFL.PatVar (SFL.Ident name)) -> do
             ts <- generalize zonked
             return  $ envInsert name ts
@@ -132,8 +108,9 @@ instantiate :: TypeScheme -> Tc Type
 instantiate (Forall tvs t) = do
     tvs' <- mapM (const fresh) tvs
     let subst = zip tvs tvs'
-    zonked <- liftIO $ zonk t
-    return $ applySubstr subst zonked
+--    zonked <- liftIO $ zonk t
+--    return $ applySubstr subst zonked
+    lift $ zonk t >>= return . (applySubstr subst)
 
 unify :: Type -> Type -> Tc ()
 unify (TypeVar tv) t' = unifyVar tv t'
