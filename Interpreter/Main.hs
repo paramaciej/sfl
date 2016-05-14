@@ -4,22 +4,25 @@ import AbsSFL as SFL
 import ParSFL
 import ErrM
 import TypeChecker.HindleyMilner
-import TypeChecker.HMUtils
+import TypeChecker.Utils
+import TypeChecker.Show
 import TypeChecker.Types
 import Control.Monad.State
 import Control.Monad.Reader
+import Control.Monad.Except
 import StdLib.Operators
 import Data.Map
 import Data.IORef
 import Interpreter.Types
 import Interpreter.Utils
 import System.Environment
+import System.IO
 
 
 defState :: IO ProgramEnv
 defState = do
     ref <- newIORef 0
-    stdTypes <- runReaderT ops (Env ref empty)
+    stdTypes <- runReaderT (runExceptT ops) (Env ref empty) >>= either fail return
     return $ PrEnv stdTypes eee
 
 main :: IO ()
@@ -29,10 +32,10 @@ main = do
     case args of
         [] -> do
             putStrLn "SFL -- Simple Functional Language\n (:q to quit)"
-            _ <- runStateT userLines prEnv
+            _ <- runStateT (runExceptT userLines) prEnv
             putStrLn "Goodbye."
         (filename:_) -> do
-            runStateT (fromFile filename) prEnv
+            runStateT (runExceptT $ fromFile filename) prEnv
             return ()
 
 
@@ -62,16 +65,20 @@ userLines = do
 showValues :: PrSt ()
 showValues = do
     st <- get
-    let combined = intersectionWith (curry id) (values st) (schemeMap $ types st)
+    let combined = intersectionWith (,) (values st) (schemeMap $ types st)
     let aux (name, (v, t)) = do
-        tStr <- showSchemeX t
+        tStr <- showScheme t
         liftIO $ putStrLn $ name ++ " = " ++ show v ++ " : " ++ tStr
-    liftIO $ runReaderT (mapM_ aux $ assocs combined) (types st)
+    liftIO $ runReaderT (runExceptT (mapM_ aux $ assocs combined)) (types st) >>= either fail return
 
 
 handleStmt :: Stmt -> PrSt ()
 handleStmt = \case
-        ExpStmt expStmt -> printExp expStmt
+        ExpStmt expStmt -> do
+            x <- catchError (printExp expStmt) aux
+            return x
+          where
+            aux str = liftIO $ hPutStrLn stderr str
 
 --        TypeDecl (UIdent name) idents tcs -> error "" --
 
@@ -85,7 +92,7 @@ handleStmt = \case
         Value (Ident name) e -> do
             PrEnv typSt valSt <- get
             t <- inferredType e
-            ts <- liftIO $ runReaderT (generalize t) typSt
+            ts <- liftIO $ runReaderT (runExceptT $ generalize t) typSt >>= either fail return
             val <- evaluatedExp e
             put $ PrEnv (envInsert name ts typSt) (insert name val valSt)
             printExp e

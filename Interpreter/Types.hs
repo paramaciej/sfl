@@ -5,11 +5,12 @@ module Interpreter.Types where
 import Data.List
 import Data.Map
 import Control.Monad.Reader
+import Control.Monad.Except
 import Control.Monad.State
 import TypeChecker.Types
 
 data ProgramEnv = PrEnv {types :: Env, values :: ValEnv}
-type PrSt = StateT ProgramEnv IO
+type PrSt = ExceptT String (StateT ProgramEnv IO)
 
 
 data Value

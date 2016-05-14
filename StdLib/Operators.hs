@@ -1,7 +1,7 @@
 module StdLib.Operators where
 
 import TypeChecker.Types
-import TypeChecker.HMUtils
+import TypeChecker.Utils
 import Interpreter.Types
 import Data.Map
 import Control.Monad.Reader

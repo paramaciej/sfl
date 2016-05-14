@@ -3,7 +3,7 @@ module TypeChecker.Infer where
 
 import qualified AbsSFL as SFL
 import TypeChecker.Types
-import TypeChecker.HMUtils
+import TypeChecker.Utils
 
 tcExp :: SFL.Exp -> Exp
 tcExp = \case

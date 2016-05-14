@@ -7,21 +7,27 @@ import Control.Monad.Reader
 import qualified Data.Map as M
 import qualified AbsSFL as SFL
 import TypeChecker.Types
-import TypeChecker.HMUtils
+import TypeChecker.Utils
+import Control.Monad.Except
+import TypeChecker.Show
 
 infer :: Exp -> Tc Type
 infer (EVar x) = do
     mts <- asks $ (M.lookup x) . schemeMap
     case mts of
         Just ts -> instantiate ts
-        Nothing -> error $ "'" ++ x ++ "' undefined." -- FIXME
+        Nothing -> throwError $ "'" ++ x ++ "' undefined." -- FIXME
 
 infer (EApp e1 e2) = do
     t1 <- infer e1
     t2 <- infer e2
     b <- fresh
     let tb = TypeVar b
-    unify t1 (TypeConstr "->" [t2, tb])
+    let appError txt = do
+        str1 <- showType t1
+        str2 <- showType t2
+        throwError $ "Próba aplikacji " ++ str2 ++ " do funkcji " ++ str1 ++ "\n Błąd: " ++ txt
+    catchError (unify t1 (TypeConstr "->" [t2, tb])) appError
     return tb
 
 infer (ELam x e) = do
@@ -55,7 +61,7 @@ infer (EMatch e cases) = do
     modifiers <- mapM aaa cases
     case modifiers of
         (m:ms) -> do
-            mapM_ (unify m) ms
+            catchError (mapM_ (unify m) ms) (\x -> throwError $ "XXX: " ++ x)
             return m
         [] -> error "no cases in match!" -- FIXME
 
@@ -77,8 +83,7 @@ inferPatExp patExp ttt = do
         SFL.PECons pe1 pe2 -> do
             free<- fresh
             unify (TypeConstr "list" [TypeVar free]) zonked
-            superZonk <- liftIO $ zonk zonked
-            case superZonk of
+            liftIO (zonk zonked) >>= \case
                 TypeConstr "list" [lt] -> do
                     z1 <- inferPatExp pe1 lt
                     z2 <- inferPatExp pe2 $ TypeConstr "list" [lt]
@@ -110,14 +115,14 @@ instantiate (Forall tvs t) = do
     let subst = zip tvs tvs'
 --    zonked <- liftIO $ zonk t
 --    return $ applySubstr subst zonked
-    lift $ zonk t >>= return . (applySubstr subst)
+    liftIO $ zonk t >>= return . (applySubstr subst)
 
 unify :: Type -> Type -> Tc ()
 unify (TypeVar tv) t' = unifyVar tv t'
 unify t (TypeVar tv') = unifyVar tv' t
 unify (TypeConstr name args) (TypeConstr name' args')
     | name == name' = zipWithM_ unify args args'
-    | otherwise = fail $ "Type mismatch: " ++ name ++ " vs. " ++ name'
+    | otherwise = throwError $ "Type mismatch: " ++ name ++ " vs. " ++ name'
 
 unifyVar :: TypeVar -> Type -> Tc ()
 unifyVar tv@(TV _ ioref) t = liftIO (readIORef ioref) >>= \case

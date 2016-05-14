@@ -17,7 +17,7 @@ eval = \case
         m <- ask
         case M.lookup name m of
             Just v -> return v
-            Nothing -> error $ "'" ++ name ++ "' not found. :/" -- FIXME
+            Nothing -> error $ "identifier not found!"
     EApp e1 e2 -> do
         val <- eval e1
         case val of
