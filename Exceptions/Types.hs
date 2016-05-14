@@ -4,6 +4,7 @@ module Exceptions.Types where
 
 data TypeException
     = TypeMismatchError MismatchError
+    | OccursCheckError String String
     | InferError String
     | UndefinedError String
 
@@ -13,6 +14,7 @@ data MismatchError = MismatchError String String (Maybe MismatchError)
 instance Show TypeException where
     show = \case
         TypeMismatchError me -> "Type mismatch: " ++ show me
+        OccursCheckError tv t -> "Occurs check failed: " ++ tv ++ " occurs in " ++ t ++ "."
         InferError s -> "Infer error: " ++ s
         UndefinedError name -> "Undefined '" ++ name ++ "'"
 

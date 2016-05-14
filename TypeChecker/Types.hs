@@ -4,6 +4,8 @@ import Data.IORef
 import Control.Monad.Reader
 import Control.Monad.Except
 import Exceptions.Types
+import Interpreter.Show
+import System.Console.ANSI
 import qualified Data.Map as M
 import qualified AbsSFL as SFL
 
@@ -13,7 +15,7 @@ instance Eq TypeVar where -- TODO a może jednak po prostu deriving Eq?
     (TV _ ioref) == (TV _ ioref') = ioref == ioref'
 
 instance Show TypeVar where
-    show (TV x _) = "TV" ++ show x
+    show (TV x _) = surroundSGR [SetItalicized True] $ "free" ++ show x
 
 data Type = TypeVar TypeVar | TypeConstr String [Type]
 

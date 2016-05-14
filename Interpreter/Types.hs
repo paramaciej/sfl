@@ -10,6 +10,7 @@ import Control.Monad.State
 import TypeChecker.Types
 import TypeChecker.Show
 import System.Console.ANSI
+import Interpreter.Show
 
 data ProgramEnv = PrEnv {types :: Env, values :: ValEnv}
 type PrSt = ExceptT String (StateT ProgramEnv IO)

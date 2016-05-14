@@ -133,7 +133,7 @@ unifyVar tv@(TV _ ioref) t reversed = liftIO (readIORef ioref) >>= \case
         Nothing -> do
             zonked <- liftIO $ zonk t
             if occursCheck tv zonked then
-                fail "occurs check failed"
+                raiseOccursCheckError tv zonked
             else
                 liftIO $ writeIORef ioref (Just zonked)
 

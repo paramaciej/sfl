@@ -15,6 +15,11 @@ raiseMismatchError t t' mTerr = do
         Just (TypeMismatchError mErr) -> Just mErr
         _ -> error "Wrong TypeException in MismatchError!"
 
+raiseOccursCheckError :: TypeVar -> Type -> Tc ()
+raiseOccursCheckError tv t = do
+    tStr <- showType t
+    throwError $ OccursCheckError (show tv) tStr
+
 --bubbleMismatchError :: Type -> Type -> TypeException -> Tc ()
 --bubbleMismatchError t t' err = do
 --    throwError

@@ -5,11 +5,9 @@ import TypeChecker.Types
 import Control.Monad.Reader
 import TypeChecker.Utils
 import Data.Maybe
+import Interpreter.Show
 
 import System.Console.ANSI
-
-surroundSGR :: [SGR] -> String -> String
-surroundSGR sgrs str = setSGRCode sgrs ++ str ++ setSGRCode [Reset]
 
 auxShowType :: Type -> (ReaderT [(TypeVar, String)] IO) String
 auxShowType t = liftIO (zonk t) >>= \case
@@ -45,7 +43,7 @@ auxShowType t = liftIO (zonk t) >>= \case
                         return $ "(" ++ name ++ concatMap (" " ++) argStrs ++ ")"
         TypeVar tv -> do
             t' <- asks $ lookup tv
-            return $ fromMaybe "unknown" t'
+            return $ fromMaybe (show tv) t'
 
 showType :: Type -> Tc String
 showType t = do

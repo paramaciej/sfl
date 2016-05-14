@@ -59,7 +59,7 @@ userLines = do
             _ -> do
                 case pStmt (myLexer line) of
                     Ok stmt -> handleStmt stmt
-                    _ -> liftIO $ putStrLn "Error on parsing line."
+                    Bad x -> liftIO $ putStrLn $ "Error on parsing line: " ++ show x
                 userLines
 
 showValues :: PrSt ()
@@ -74,8 +74,7 @@ showValues = do
 
 handleStmt :: Stmt -> PrSt ()
 handleStmt = \case
-        ExpStmt expStmt -> catchError (printExp expStmt) aux
-            where aux str = liftIO $ hPutStrLn stderr str
+        ExpStmt expStmt -> catchError (printExp expStmt) (liftIO . hPutStrLn stderr)
 
 --        TypeDecl (UIdent name) idents tcs -> error "" --
 
@@ -87,11 +86,14 @@ handleStmt = \case
             lamCurry [] _ = error "impossible (function with no arguments)"
 
         Value (Ident name) e -> do
-            PrEnv typSt valSt <- get
-            t <- inferredType e
-            ts <- liftIO $ runReaderT (runExceptT $ generalize t) typSt >>= either (fail . show) return
-            val <- evaluatedExp e
-            put $ PrEnv (envInsert name ts typSt) (insert name val valSt)
-            printExp e
+            catchError (handleValue) (liftIO . hPutStrLn stderr)
+          where
+            handleValue = do
+                PrEnv typSt valSt <- get
+                t <- inferredType e
+                ts <- liftIO $ runReaderT (runExceptT $ generalize t) typSt >>= either (fail . show) return
+                val <- evaluatedExp e
+                put $ PrEnv (envInsert name ts typSt) (insert name val valSt)
+                printExp e
 
 
