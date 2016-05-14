@@ -13,21 +13,17 @@ import TypeChecker.HMUtils
 inferredType :: SFL.Exp -> PrSt Type
 inferredType e = do
     env <- gets types
-    t <- liftIO $ runReaderT (infer $ tcExp e) env
-    return t
+    liftIO $ runReaderT (infer $ tcExp e) env
 
 typeStr :: SFL.Exp -> PrSt String
 typeStr e = do
-    t <- inferredType e
+    t <- inferredType e >>= liftIO . zonk
     tenv <- gets types
---    zonked <- liftIO $ zonk t
-    sss <- liftIO $ runReaderT (showScheme t) tenv
-    return sss
+    liftIO $ runReaderT (showScheme t) tenv
 
 evaluatedExp :: SFL.Exp -> PrSt Value
 evaluatedExp e = do
     env <- gets values
-    liftIO $ putStrLn $ "TC: " ++ show (tcExp e)
     liftIO $ runReaderT (eval (tcExp e)) env
 
 showExp :: SFL.Exp -> PrSt String

@@ -1,12 +1,9 @@
 import AbsSFL as SFL
-import LexSFL
 import ParSFL
 import ErrM
 import TypeChecker.HindleyMilner
-import TypeChecker.Infer
 import TypeChecker.HMUtils
 import TypeChecker.Types
-import Interpreter.Evaluator
 import Control.Monad.State
 import Control.Monad.Reader
 import StdLib.Operators
@@ -26,7 +23,6 @@ defState = do
 main :: IO ()
 main = do
     args <- getArgs
---    stdTypes <- runReaderT ops (Env 42 empty) -- TODO niezbyt ładne...
     prEnv <- defState
     case args of
         [] -> do
@@ -34,7 +30,7 @@ main = do
             _ <- runStateT userLines prEnv
             putStrLn "Goodbye."
         (filename:_) -> do
-            _ <- runStateT (fromFile filename) prEnv
+            runStateT (fromFile filename) prEnv
             return ()
 
 

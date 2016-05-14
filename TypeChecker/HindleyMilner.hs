@@ -3,12 +3,10 @@
 module TypeChecker.HindleyMilner where
 
 import Data.IORef
-import Data.List
 import Control.Monad.Reader
 import qualified Data.Map as M
 import qualified AbsSFL as SFL
 import TypeChecker.Types
-import TypeChecker.FTV
 import TypeChecker.HMUtils
 
 infer :: Exp -> Tc Type
@@ -101,7 +99,6 @@ inferPatExp patExp ttt = do
             let tbbb = TypeVar bbb
             unify (TypeConstr "list" [tbbb]) zonked
             xxxx <- liftIO $ showType zonked
-            liftIO $ putStrLn $ "after unify: " ++ xxxx
             superZonk <- liftIO $ zonk zonked
             case superZonk of
                 TypeConstr "list" [lt] -> do

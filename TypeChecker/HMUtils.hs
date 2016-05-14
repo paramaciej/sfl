@@ -22,13 +22,11 @@ zonk t@(TypeVar (TV _ ioref)) = liftIO (readIORef ioref) >>= \case
 
 fresh :: Tc TypeVar
 fresh = do
-    mref <- asks maxIORef
-    mcounter <- liftIO $ (+1) <$> readIORef mref
-    liftIO $ writeIORef mref mcounter
---    mcounter <- liftIO $ readIORef mref
-    liftIO $ putStrLn $ "\t >> FRESH nr  " ++ show (mcounter)
+    cRef <- asks maxIORef
+    counter <- liftIO $ (+1) <$> readIORef cRef
+    liftIO $ writeIORef cRef counter
     ioref <- liftIO (newIORef Nothing)
-    return $ TV mcounter ioref
+    return $ TV counter ioref
 
 
 applySubstr :: [(TypeVar, TypeVar)] -> Type -> Type
@@ -96,12 +94,9 @@ showSchemeX (Forall tvs tt) = do
 
 generalize :: Type -> Tc TypeScheme
 generalize t = do
-    tstr <- liftIO $ showType t
-    liftIO $ putStrLn $ "\tGENERALIZE TYPE: " ++ tstr
     fv <- ftv t
     m <- asks schemeMap
     fvenv <- ftv $ M.elems m
-    liftIO $ putStrLn $ "\tfree v = " ++ show (fv) ++ ", free env = " ++ show (fvenv)
     return $ Forall (fv \\ fvenv) t
 
 
