@@ -5,7 +5,7 @@ bnfc:
 	bnfc SFL.cf
 	happy -gca ParSFL.y
 	alex -g LexSFL.x
-#	ghc --make TestSFL.hs -o TestSFL
+	ghc --make TestSFL.hs -o TestSFL
 
 clean:
 	-rm -f *.log *.aux *.hi *.o *.dvi Interpreter/*.o Interpreter/*.hi TypeChecker/*.o TypeChecker/*.hi StdLib/*.o StdLib/*.hi 

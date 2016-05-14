@@ -28,6 +28,7 @@ ELetRec.    Exp ::= "let" "rec" Ident "=" Exp "in" Exp;
 PatInt.     Pat ::= Integer;
 PatTrue.    Pat ::= "True";
 PatFalse.   Pat ::= "False";
+PatEList.   Pat ::= "[" "]";
 PatVar.     Pat ::= Ident;
 PatTConstr. Pat ::= UIdent [PatExp];
 PatWild.    Pat ::= "_";
