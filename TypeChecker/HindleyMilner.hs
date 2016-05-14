@@ -13,7 +13,7 @@ import TypeChecker.HMUtils
 
 infer :: Exp -> Tc Type
 infer (EVar x) = do
-    mts <- asks $ M.lookup x
+    mts <- asks $ (M.lookup x) . schemeMap
     case mts of
         Just ts -> instantiate ts
         Nothing -> error $ "'" ++ x ++ "' undefined." -- FIXME
@@ -41,7 +41,7 @@ infer (EApp e1 e2) = do
 infer (ELam x e) = do
     b <- fresh
     let tb = TypeVar b
-    t <- local (M.insert x (Forall [] tb)) $ infer e
+    t <- local (envInsert x (Forall [] tb)) $ infer e
     se <- showScheme t
     stb <- showScheme tb
     liftIO $ putStrLn $ "ELAM! " ++ "from: " ++ stb ++ ", to: " ++ se
@@ -100,8 +100,8 @@ inferPatExp patExp ttt = do
             bbb <- fresh
             let tbbb = TypeVar bbb
             unify (TypeConstr "list" [tbbb]) zonked
-            xxx <- liftIO $ showType zonked
-            liftIO $ putStrLn $ "after unify: " ++ xxx
+            xxxx <- liftIO $ showType zonked
+            liftIO $ putStrLn $ "after unify: " ++ xxxx
             superZonk <- liftIO $ zonk zonked
             case superZonk of
                 TypeConstr "list" [lt] -> do
@@ -110,10 +110,10 @@ inferPatExp patExp ttt = do
                     return (z1 . z2)
                 TypeConstr x y -> do
                     error $ "XXYssssXX: " ++ x
-                _ -> error $ "wrong cons matching:" ++ xxx -- FIXME
+                _ -> error $ "wrong cons matching:" ++ xxxx -- FIXME
         SFL.PEPat (SFL.PatVar (SFL.Ident name)) -> do
             ts <- generalize zonked
-            return (M.insert name ts)
+            return  $ envInsert name ts
         SFL.PEPat (SFL.PatTConstr (SFL.UIdent name) pats) -> do
             case zonked of
                 TypeConstr n args -> if n == name
@@ -133,14 +133,10 @@ inferPatExp patExp ttt = do
 
 instantiate :: TypeScheme -> Tc Type
 instantiate (Forall tvs t) = do
-    liftIO $ putStrLn $ "instantiate... " ++ show (length tvs) ++ "."
     tvs' <- mapM (const fresh) tvs
     let subst = zip tvs tvs'
-    liftIO $ putStrLn $ "length of subst: " ++ show (length subst) ++ "."
-    let new_type = applySubstr subst t
-    xxxx <- showScheme new_type
-    liftIO $ putStrLn $ "after: " ++ xxxx
-    return new_type
+    zonked <- liftIO $ zonk t
+    return $ applySubstr subst zonked
 
 unify :: Type -> Type -> Tc ()
 unify (TypeVar tv) t' = unifyVar tv t'
@@ -150,12 +146,12 @@ unify (TypeConstr name args) (TypeConstr name' args')
     | otherwise = fail $ "Type mismatch: " ++ name ++ " vs. " ++ name'
 
 unifyVar :: TypeVar -> Type -> Tc ()
-unifyVar ioref t = liftIO (readIORef ioref) >>= \case
+unifyVar tv@(TV _ ioref) t = liftIO (readIORef ioref) >>= \case
         Just context -> unify context t
         Nothing -> do
             zonked <- liftIO $ zonk t
-            if occursCheck ioref zonked then
-                fail "occurs check failed <corner!?>"
+            if occursCheck tv zonked then
+                fail "occurs check failed"
             else
                 liftIO $ writeIORef ioref (Just zonked)
 
@@ -165,8 +161,8 @@ letRecEnvModifier name e = do
     rm <- recMod
     t <- local rm $ infer e
     ts <- generalize t
-    return $ M.insert name ts
+    return $ envInsert name ts
   where
     recMod = do
         fr <- fresh
-        return (M.insert name (Forall [] $ TypeVar fr))
+        return $ envInsert name (Forall [] $ TypeVar fr)

@@ -9,16 +9,26 @@ import qualified Data.Map as M
 import TypeChecker.Types
 import TypeChecker.FTV
 
+envInsert :: String -> TypeScheme -> Env -> Env
+envInsert name value (Env m t) = Env m (M.insert name value t)
+
 
 zonk :: Type -> IO Type
 zonk (TypeConstr name ts) = TypeConstr name <$> mapM zonk ts
-zonk t@(TypeVar tv) = liftIO (readIORef tv) >>= \case
+zonk t@(TypeVar (TV _ ioref)) = liftIO (readIORef ioref) >>= \case
     Nothing -> return t
     Just ty -> zonk ty
 
 
-fresh :: MonadIO m => m TypeVar
-fresh = liftIO (newIORef Nothing)
+fresh :: Tc TypeVar
+fresh = do
+    mref <- asks maxIORef
+    mcounter <- liftIO $ (+1) <$> readIORef mref
+    liftIO $ writeIORef mref mcounter
+--    mcounter <- liftIO $ readIORef mref
+    liftIO $ putStrLn $ "\t >> FRESH nr  " ++ show (mcounter)
+    ioref <- liftIO (newIORef Nothing)
+    return $ TV mcounter ioref
 
 
 applySubstr :: [(TypeVar, TypeVar)] -> Type -> Type
@@ -47,7 +57,7 @@ showType t = do
                 _ -> case tsStr of
                     [] -> name
                     _ -> "(" ++ name ++ concatMap (" " ++) tsStr ++ ")"
-        TypeVar _ -> return "Free"
+        TypeVar tv -> return $ show tv
 
 
 xxx :: Type -> (ReaderT ([(TypeVar, String)]) IO) String
@@ -89,9 +99,9 @@ generalize t = do
     tstr <- liftIO $ showType t
     liftIO $ putStrLn $ "\tGENERALIZE TYPE: " ++ tstr
     fv <- ftv t
-    m <- ask
+    m <- asks schemeMap
     fvenv <- ftv $ M.elems m
-    liftIO $ putStrLn $ "\tfree v = " ++ show (length fv) ++ ", free env = " ++ show (length fvenv)
+    liftIO $ putStrLn $ "\tfree v = " ++ show (fv) ++ ", free env = " ++ show (fvenv)
     return $ Forall (fv \\ fvenv) t
 
 

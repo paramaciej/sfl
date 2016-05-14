@@ -5,15 +5,19 @@ import Control.Monad.Reader
 import qualified Data.Map as M
 import qualified AbsSFL as SFL
 
-type TypeVar = IORef (Maybe Type)
+data TypeVar = TV Int (IORef (Maybe Type))
 
+instance Eq TypeVar where -- TODO a może jednak po prostu deriving Eq?
+    (TV _ ioref) == (TV _ ioref') = ioref == ioref'
 
+instance Show TypeVar where
+    show (TV x _) = "TV" ++ show x
 
 data Type = TypeVar TypeVar | TypeConstr String [Type]
 
 data TypeScheme = Forall [TypeVar] Type
 
-type Env = M.Map String TypeScheme
+data Env = Env {maxIORef :: IORef Int, schemeMap :: M.Map String TypeScheme}
 type Tc = ReaderT Env IO
 
 data Exp

@@ -11,22 +11,30 @@ import Control.Monad.State
 import Control.Monad.Reader
 import StdLib.Operators
 import Data.Map
+import Data.IORef
 import Interpreter.Types
 import Interpreter.Utils
 import System.Environment
 
 
+defState :: IO ProgramEnv
+defState = do
+    ref <- newIORef 12
+    stdTypes <- runReaderT ops (Env ref empty)
+    return $ PrEnv stdTypes eee
+
 main :: IO ()
 main = do
     args <- getArgs
-    stdTypes <- ops
+--    stdTypes <- runReaderT ops (Env 42 empty) -- TODO niezbyt ładne...
+    prEnv <- defState
     case args of
         [] -> do
             putStrLn "SFL -- Simple Functional Language\n (:q to quit)"
-            _ <- runStateT userLines (PrEnv stdTypes eee)
+            _ <- runStateT userLines prEnv
             putStrLn "Goodbye."
         (filename:_) -> do
-            _ <- runStateT (fromFile filename) (PrEnv stdTypes eee)
+            _ <- runStateT (fromFile filename) prEnv
             return ()
 
 
@@ -55,7 +63,7 @@ userLines = do
                     tt <- instantiate t
                     txxx <- showScheme tt
                     liftIO $ putStrLn $ name ++ " of type " ++ txxx
-                liftIO $ runReaderT (mapM_ aaa $ assocs ttt) ttt
+                liftIO $ runReaderT (mapM_ aaa $ assocs (schemeMap ttt)) ttt
                 userLines
             ":q" -> return ()
             _ -> do
@@ -87,7 +95,7 @@ handleStmt stmt = do
             sxxx <- liftIO $ runReaderT (showSchemeX ts) typSt
             liftIO $ putStrLn $ "VALUE<<<<<<<<< " ++ sxxx
             val <- evaluatedExp e
-            put $ PrEnv (insert name ts typSt) (insert name val valSt)
+            put $ PrEnv (envInsert name ts typSt) (insert name val valSt)
             printExp e
 
 

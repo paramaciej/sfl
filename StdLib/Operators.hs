@@ -4,36 +4,40 @@ import TypeChecker.Types
 import TypeChecker.HMUtils
 import Interpreter.Types
 import Data.Map
+import Control.Monad.Reader
 
 
-ops :: IO Env
+ops :: Tc Env
 ops = do
     fr <- fresh
     let binIntOp = Forall [] $ mulTApp [tInt, tInt] tInt
     let binBoolOp = Forall [] $ mulTApp [tBool, tBool] tBool
     let cmpOp = Forall [] $ mulTApp [tInt, tInt] tBool
-    return $ fromList [
-        ("add", binIntOp),
-        ("sub", binIntOp),
-        ("mul", binIntOp),
-        ("div", binIntOp),
-        ("mod", binIntOp),
 
-        ("_and", binBoolOp),
-        ("_or", binBoolOp),
-        ("_not", Forall [] $ mulTApp [tBool] tBool),
 
-        ("_lt", cmpOp),
-        ("_lte", cmpOp),
-        ("_gt", cmpOp),
-        ("_gte", cmpOp),
-        ("_eq", cmpOp),
-        ("_neq", cmpOp),
+    let o =  fromList [
+                ("add", binIntOp),
+                ("sub", binIntOp),
+                ("mul", binIntOp),
+                ("div", binIntOp),
+                ("mod", binIntOp),
 
-        ("[]", Forall [fr] $ TypeConstr "list" [TypeVar fr]),
-        ("cons", Forall [fr] $ mulTApp [TypeVar fr, TypeConstr "list" [TypeVar fr]] (TypeConstr "list" [TypeVar fr])),
-        ("_infer_if", Forall [fr] $ mulTApp [tBool, TypeVar fr, TypeVar fr] (TypeVar fr))
-        ]
+                ("_and", binBoolOp),
+                ("_or", binBoolOp),
+                ("_not", Forall [] $ mulTApp [tBool] tBool),
+                ("_lt", cmpOp),
+                ("_lte", cmpOp),
+                ("_gt", cmpOp),
+                ("_gte", cmpOp),
+                ("_eq", cmpOp),
+                ("_neq", cmpOp),
+
+                ("[]", Forall [fr] $ TypeConstr "list" [TypeVar fr]),
+                ("cons", Forall [fr] $ mulTApp [TypeVar fr, TypeConstr "list" [TypeVar fr]] (TypeConstr "list" [TypeVar fr])),
+                ("_infer_if", Forall [fr] $ mulTApp [tBool, TypeVar fr, TypeVar fr] (TypeVar fr))
+                ]
+    local (\(Env m _) -> Env m o) (ask)
+--    return $ Env 0 $
 
 eee :: (Map String Value)
 eee = fromList [
