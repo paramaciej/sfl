@@ -40,7 +40,7 @@ coercions PatExp 2;
 terminator PatExp "";
 
 ETuple.     Exp ::= Exp1 "," [Exp1];
-ECons.      Exp1 ::= Exp1 ":" Exp2;
+ECons.      Exp1 ::= Exp2 ":" Exp1;
 EOr.        Exp2 ::= Exp2 "or" Exp3;
 EAnd.       Exp3 ::= Exp3 "and" Exp4;
 ENot.       Exp4 ::= "not" Exp5;
