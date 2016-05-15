@@ -4,6 +4,7 @@ module Interpreter.PatEval where
 import Interpreter.Types
 import AbsSFL as SFL
 import Data.Map
+import Control.Monad.Reader
 
 patEval :: SFL.PatExp -> Value -> VE (ValEnv -> ValEnv)
 patEval patExp val = case patExp of
@@ -35,3 +36,31 @@ patEval patExp val = case patExp of
     PEPat (PatTrue) -> return id
     PEPat (PatFalse) -> return id
     PEPat (PatInt _) -> return id
+
+
+
+
+patEquals :: SFL.PatExp -> Value -> Bool
+patEquals patExp val = case patExp of
+    PETuple pe1 pe2 -> case val of
+        VTuple [v1, v2] -> patEquals pe1 v1 && patEquals pe2 v2
+    PECons pe1 pe2 -> case val of
+        VList (v:vs) -> patEquals pe1 v && patEquals pe2 (VList vs)
+        VList [] -> False
+        _ -> error "todo" -- TODO
+    PEPat (PatVar _) -> True
+    PEPat (PatTConstr _ _) -> undefined
+    PEPat (PatWild) -> True
+    PEPat (PatTrue) -> case val of
+        VBool b -> b == True
+        _ -> error "coś tam" -- TODO
+    PEPat (PatFalse) -> case val of
+        VBool b -> b == False
+        _ -> error "trutututu tam" -- TODO
+    PEPat (PatEList) -> case val of
+        VList [] -> True
+        VList (_:_) -> False
+        _ -> error "ttruruiirwpe" -- TODO
+    PEPat (PatInt x) -> case val of
+        VInt y -> x == y
+        _ -> error " xxxx " -- TODO

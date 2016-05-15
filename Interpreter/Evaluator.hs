@@ -8,7 +8,8 @@ import TypeChecker.Types
 import qualified Data.Map as M
 import Interpreter.Types
 import Interpreter.PatEval
-
+import qualified AbsSFL as SFL
+import Control.Monad.Except
 
 
 eval :: Exp -> VE Value
@@ -44,11 +45,24 @@ eval = \case
             VBool True -> eval eTrue
             VBool False -> eval eFalse
             _ -> error "conditional doesn't evaluate to Bool!"
---    EMatch e cases -> do
---        val <- eval e
+    EMatch e cases -> do
+        val <- eval e -- TODO skończyć to
+        evalPatchMatch cases val
+
+
     EConstr "tuple" exps -> do
         vals <- mapM eval exps
         return $ VTuple vals
     EConstr name exps -> do
         vals <- mapM eval exps
         return $ VConstr name vals
+
+
+evalPatchMatch :: [(SFL.PatExp, Exp)] -> Value -> VE Value
+evalPatchMatch ((patExp, body):mcases) val = if patEquals patExp val
+        then do
+            modifications <- patEval patExp val
+            local modifications $ eval body
+--            return modifications -- TODO
+        else evalPatchMatch mcases val
+evalPatchMatch [] _ = error "NO LOL!" -- TODO

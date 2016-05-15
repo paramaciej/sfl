@@ -106,7 +106,7 @@ inferPatExp patExp ttt = do
                     else error "constructor names mismatch!" -- FIXME
                 _ -> error "wrong type constr."
         SFL.PEPat SFL.PatWild -> return id
-        SFL.PEPat SFL.PatTrue -> return id
+        SFL.PEPat SFL.PatTrue -> return id -- TODO może trzeba mimo wszystko sprawdzić ten typ?
         SFL.PEPat SFL.PatFalse -> return id
         SFL.PEPat (SFL.PatInt _) -> return id
 
