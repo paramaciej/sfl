@@ -3,9 +3,12 @@ token UIdent (upper (letter | digit | '_')*);
 Prog.       Program ::= [Stmt];
 ExpStmt.    Stmt ::= Exp;
 
-TypeConstr. TC ::= UIdent [Ident] ;
+TypeConstr. TC ::= UIdent [TCArg];
+TCAIdent.   TCArg ::= Ident;
+TCAArg.     TCArg ::= TC;
 TypeDecl.   Stmt ::= "type" UIdent [Ident] "=" [TC];
 separator   nonempty TC "|";
+terminator  TCArg "";
 
 
 
@@ -76,7 +79,7 @@ separator   nonempty Exp1 ",";
 EListElem.  LElem ::= Exp1;
 separator   LElem ",";
 
-ETCElem.    ETCEl ::= Exp1;
+ETCElem.    ETCEl ::= Exp9;
 separator   ETCEl "";
 
 separator   Stmt ";";

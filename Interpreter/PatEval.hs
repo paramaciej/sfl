@@ -59,7 +59,11 @@ patEquals patExp val = case patExp of
         VList [] -> False
         _ -> error "todo" -- TODO
     PEPat (PatVar _) -> True
-    PEPat (PatTConstr _ _) -> undefined
+    PEPat (PatTConstr (UIdent name) pats) -> case val of
+        VConstr name' vals -> if name == name'
+            then all (\(p, v) -> patEquals p v) (zip pats vals)
+            else False
+        _ -> error "todo" -- TODO
     PEPat (PatWild) -> True
     PEPat (PatTrue) -> case val of
         VBool b -> b == True
@@ -67,7 +71,7 @@ patEquals patExp val = case patExp of
     PEPat (PatFalse) -> case val of
         VBool b -> b == False
         _ -> error "trutututu tam" -- TODO
-    PEPat (PatList elems) -> let patExps = map (\(PatLElem patExp) -> patExp) elems
+    PEPat (PatList elems) -> let patExps = map (\(PatLElem p) -> p) elems
         in case val of
             VList vals -> if length patExps == length vals
                 then all (\(p, v) -> patEquals p v) (zip patExps vals)

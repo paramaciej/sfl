@@ -11,6 +11,7 @@ data TypeException
     | EmptyMatchError
     | DifferentCaseTypesError TypeException
     | PatternMatchingError String String TypeException
+    | ConstructorArgsNumber String Int Int
 
 data MismatchError = MismatchError String String (Maybe MismatchError)
 
@@ -29,6 +30,9 @@ instance Show TypeException where
         PatternMatchingError patStr tStr err ->
             "Wrong types at matching patern: " ++ patStr ++ "\n" ++
             "       with expression of type: " ++ tStr ++ "\n" ++ show err
+        ConstructorArgsNumber constrName rightNumber wrongNumber ->
+            "Type constructor '" ++ constrName ++ "' requires " ++ show rightNumber ++ " arguments " ++
+            "(" ++ show wrongNumber ++ " was given)."
 
 
 instance Show MismatchError where

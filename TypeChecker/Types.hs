@@ -21,7 +21,13 @@ data Type = TypeVar TypeVar | TypeConstr String [Type]
 
 data TypeScheme = Forall [TypeVar] Type
 
-data Env = Env {maxIORef :: IORef Int, schemeMap :: M.Map String TypeScheme}
+data Env = Env {
+    maxIORef :: IORef Int,
+    schemeMap :: M.Map String TypeScheme,
+    typeConstrs :: M.Map String TCEntry}
+
+data TCEntry = TCEntry { typeName :: String, typeTrans :: [Type] -> Tc Type}
+
 type Tc = ExceptT TypeException (ReaderT Env IO)
 
 data Exp

@@ -10,6 +10,8 @@ import Interpreter.Show
 
 import System.Console.ANSI
 
+standardConstrs = ["->", "tuple", "list", "Int", "Bool"]
+
 auxShowType :: Type -> (ReaderT [(TypeVar, String)] IO) String
 auxShowType t = liftIO (zonk t) >>= \case
         TypeConstr name ts -> do
@@ -44,10 +46,19 @@ auxShowType t = liftIO (zonk t) >>= \case
                     [] -> return $ surroundSGR [SetColor Foreground Vivid Cyan] "Bool"
                     _ -> error "Wrong number of aeguments for Bool!"
                 _ -> \case
-                    [] -> return name
                     args -> do
-                        argStrs <- mapM auxShowType args
-                        return $ "(" ++ name ++ concatMap (" " ++) argStrs ++ ")"
+                        argStrs <- mapM xxx args
+                        return $ surroundSGR [SetColor Foreground Vivid Green] name ++ concatMap (" " ++) argStrs
+                      where
+                        xxx tt = case tt of
+                            TypeConstr "->" _ -> auxShowType tt
+                            TypeConstr "tuple" _ -> auxShowType tt
+                            TypeConstr "list" _ -> auxShowType tt
+                            TypeConstr _ [] -> auxShowType tt
+                            TypeConstr _ _ -> do
+                                tStr <- auxShowType tt
+                                return $ "(" ++ tStr ++ ")"
+                            TypeVar _ -> auxShowType tt
         TypeVar tv -> do
             t' <- asks $ lookup tv
             return $ fromMaybe (show tv) t'

@@ -11,7 +11,7 @@ import TypeChecker.FTV
 
 
 envInsert :: String -> TypeScheme -> Env -> Env
-envInsert name value (Env m t) = Env m (M.insert name value t)
+envInsert name value (Env m t tc) = Env m (M.insert name value t) tc
 
 
 zonk :: Type -> IO Type

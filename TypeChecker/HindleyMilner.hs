@@ -63,8 +63,11 @@ infer (EMatch e cases) = do
         [] -> throwError EmptyMatchError
 
 infer (EConstr name es) = do
-    x <- mapM infer es
-    return $ TypeConstr name x
+    constructor <- asks (M.lookup name . typeConstrs)
+    xs <- mapM infer es
+    case constructor of
+        Just constr -> typeTrans constr xs
+        Nothing -> throwError $ UndefinedError $ "constructor: " ++ name
 
 
 inferPatExp :: SFL.PatExp -> Type -> Tc (Env -> Env)
@@ -95,16 +98,19 @@ inferPatExp patExp ttt = do
             return  $ envInsert name ts
         SFL.PEPat (SFL.PatTConstr (SFL.UIdent name) pats) -> do
             -- TODO jakieś unify??
-            case zonked of
-                TypeConstr n args -> if n == name
-                    then do
-                        zs <- mapM (\(p, a) -> inferPatExp p a) (zip pats args)
-                        let composed = comp zs where
-                            comp [] = id
-                            comp (h:t) = h . (comp t)
-                        return  composed
-                    else error "constructor names mismatch!" -- TODO throwError?
-                _ -> error "wrong type constructor"
+            constructor <- asks (M.lookup name . typeConstrs)
+            case constructor of
+                Just constr -> do
+                    let xname = typeName constr
+                    case zonked of
+                        TypeConstr n args -> if n == xname
+                            then do
+                                zs <- mapM (\(p, a) -> inferPatExp p a) (zip pats args)
+                                return $ foldr (.) id zs
+                            else error $ "constructor names mismatch! : " ++ n ++ " / " ++ xname -- TODO throwError?
+                        _ -> error "wrong type constructor"
+                Nothing -> error "unknown" -- FIXME
+
         SFL.PEPat SFL.PatWild -> return id
         SFL.PEPat SFL.PatTrue -> unify tBool zonked >> return id
         SFL.PEPat SFL.PatFalse -> unify tBool zonked >> return id

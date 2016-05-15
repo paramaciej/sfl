@@ -37,7 +37,7 @@ ops = do
                 ("cons", Forall [fr] $ mulTApp [TypeVar fr, TypeConstr "list" [TypeVar fr]] (TypeConstr "list" [TypeVar fr])),
                 ("_infer_if", Forall [fr] $ mulTApp [tBool, TypeVar fr, TypeVar fr] (TypeVar fr))
                 ]
-    local (\(Env m _) -> Env m o) ask
+    local (\(Env m _ tc) -> Env m o tc) ask
 
 eee :: (Map String Value)
 eee = fromList [

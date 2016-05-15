@@ -8,7 +8,6 @@ import Control.Monad.Reader
 import Control.Monad.Except
 import Control.Monad.State
 import TypeChecker.Types
-import TypeChecker.Show
 import System.Console.ANSI
 import Interpreter.Show
 
@@ -39,4 +38,5 @@ instance Show Value where
         VTuple tuple -> let blue = surroundSGR [SetColor Foreground Dull Blue] in
             blue "(" ++ intercalate (blue ", ") (Prelude.map show tuple) ++ blue ")"
         VFun _ -> surroundSGR [SetColor Foreground Dull Yellow] "function"
-        VConstr name vals -> "V" ++ surroundSGR [SetColor Foreground Dull Green] name ++ ": " ++ show vals
+        VConstr name vals -> surroundSGR [SetColor Foreground Dull Green] name ++
+            concatMap (\x -> " " ++ show x) vals -- TODO fix displaying

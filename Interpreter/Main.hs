@@ -17,12 +17,13 @@ import Interpreter.Types
 import Interpreter.Utils
 import System.Environment
 import System.IO
+import UserTypes.Declare
 
 
 defState :: IO ProgramEnv
 defState = do
     ref <- newIORef 0
-    stdTypes <- runReaderT (runExceptT ops) (Env ref empty) >>= either (fail . show) return
+    stdTypes <- runReaderT (runExceptT ops) (Env ref empty empty) >>= either (fail . show) return
     return $ PrEnv stdTypes eee
 
 main :: IO ()
@@ -76,7 +77,14 @@ handleStmt :: Stmt -> PrSt ()
 handleStmt = \case
         ExpStmt expStmt -> catchError (printExp expStmt) (liftIO . hPutStrLn stderr)
 
---        TypeDecl (UIdent name) idents tcs -> error "" --
+        tDecl@(TypeDecl _ _ _) -> do
+            catchError (handleDecl) (liftIO . hPutStrLn stderr)
+          where
+            handleDecl = do
+                PrEnv typeSt valSt <- get
+                xx <- liftIO $ runReaderT (runExceptT $ declareType tDecl) typeSt >>= either (fail . show) return
+                liftIO $ putStrLn $ "OK!"
+                put $ PrEnv (xx typeSt) valSt
 
         Function name arg args body -> handleStmt
             (Value name (SFL.ELetRec name (lamCurry (arg:args) body) (SFL.ELiteral $ SFL.LVar name)))
