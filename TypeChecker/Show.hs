@@ -5,6 +5,7 @@ import TypeChecker.Types
 import Control.Monad.Reader
 import TypeChecker.Utils
 import Data.Maybe
+import Data.List
 import Interpreter.Show
 
 import System.Console.ANSI
@@ -25,6 +26,12 @@ auxShowType t = liftIO (zonk t) >>= \case
                             _ -> leftStr)
                             ++ surroundSGR [SetColor Foreground Vivid Yellow] " -> " ++ rightStr
                     _ -> error "Wrong number of arguments in application!"
+                "tuple" -> \case
+                    args -> do
+                        argStrs <- mapM auxShowType args
+                        let blue = surroundSGR [SetColor Foreground Vivid Blue]
+                        return $ blue "(" ++ intercalate (blue ", ") argStrs ++ blue ")"
+
                 "list" -> \case
                     [t'] -> do
                         tStr <- auxShowType t'

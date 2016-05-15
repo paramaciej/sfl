@@ -4,7 +4,7 @@ import TypeChecker.Types
 import TypeChecker.Show
 import Control.Monad.Except
 import Exceptions.Types
-import Data.Maybe
+import AbsSFL
 
 raiseMismatchError :: Type -> Type -> Maybe TypeException -> Tc ()
 raiseMismatchError t t' mTerr = do
@@ -20,15 +20,30 @@ raiseOccursCheckError tv t = do
     tStr <- showType t
     throwError $ OccursCheckError (show tv) tStr
 
---bubbleMismatchError :: Type -> Type -> TypeException -> Tc ()
---bubbleMismatchError t t' err = do
---    throwError
 
---catchApplicationError :: _
---catchApplicationError x = do
---    catchError x aux
---  where
---    aux txt = do
---        str1 <- return "A" -- showType t1
---        str2 <- return "B" -- showType t2
---        throwError $ "Próba aplikacji " ++ str2 ++ " do funkcji " ++ str1 ++ "\n Błąd: " ++ txt
+catchAppInfer :: Tc() -> Type -> Type -> Tc ()
+catchAppInfer unify funT argT = do
+    catchError unify handle where
+        handle err = do
+            funStr <- showType funT
+            argStr <- showType argT
+            throwError $ ApplicationTypeError funStr argStr err
+
+catchIfInfer :: Tc Type -> Tc Type
+catchIfInfer ifInfer = do
+    catchError ifInfer handle where
+        handle :: TypeException -> Tc Type
+        handle err = throwError $ InferError "Type error in if expression." err
+
+catchMatchInfer :: Tc () -> Tc ()
+catchMatchInfer unify = do
+    catchError unify handle where
+        handle :: TypeException -> Tc ()
+        handle err = throwError $ DifferentCaseTypesError err
+
+catchPatternMatch :: Tc () -> PatExp -> Type -> Tc ()
+catchPatternMatch unify patExp t = do
+    catchError unify handle where
+        handle err = do
+            tStr <- showType t
+            throwError $ PatternMatchingError (show patExp) tStr err

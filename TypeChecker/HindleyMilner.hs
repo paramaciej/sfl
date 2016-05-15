@@ -9,7 +9,6 @@ import qualified AbsSFL as SFL
 import TypeChecker.Types
 import TypeChecker.Utils
 import Control.Monad.Except
-import TypeChecker.Show
 import Exceptions.Types
 import Exceptions.Utils
 
@@ -25,11 +24,7 @@ infer (EApp e1 e2) = do
     t2 <- infer e2
     b <- fresh
     let tb = TypeVar b
-    let appError err = do
-        str1 <- showType t1
-        str2 <- showType t2
-        throwError $ InferError $ "The application of the function of type " ++ str1 ++ " to the argument of type " ++ str2 ++ ".\n" ++ show err
-    catchError (unify t1 (TypeConstr "->" [t2, tb])) appError
+    catchAppInfer (unify t1 (TypeConstr "->" [t2, tb])) t1 t2
     return tb
 
 infer (ELam x e) = do
@@ -47,25 +42,25 @@ infer (ELetRec name e body) = do
     modifier <- letRecEnvModifier name e
     local modifier $ infer body
 
-
 infer (EInt _) = return tInt
 
 infer (EBool _) = return tBool
 
-infer (EIf cond eTrue eFalse) = infer (mulEApp (EVar "_infer_if") [cond, eTrue, eFalse])
+infer (EIf cond eTrue eFalse) =
+    catchIfInfer (infer (mulEApp (EVar "_infer_if") [cond, eTrue, eFalse]))
 
 infer (EMatch e cases) = do
     t <- infer e
-    let aaa = \(patExp, caseBody) -> do
+    let aux = \(patExp, caseBody) -> do
         mods <- inferPatExp patExp t
         local mods $ infer caseBody
 
-    modifiers <- mapM aaa cases
+    modifiers <- mapM aux cases
     case modifiers of
         (m:ms) -> do
-            mapM_ (unify m) ms
+            mapM_ (\x -> catchMatchInfer (unify m x)) ms
             return m
-        [] -> error "no cases in match!" -- FIXME
+        [] -> throwError EmptyMatchError
 
 infer (EConstr name es) = do
     x <- mapM infer es
@@ -76,25 +71,30 @@ inferPatExp :: SFL.PatExp -> Type -> Tc (Env -> Env)
 inferPatExp patExp ttt = do
     zonked <- liftIO $ zonk ttt
     case patExp of
-        SFL.PETuple pe1 pe2 -> case zonked of
-            TypeConstr "tuple" [t1, t2] -> do
-                z1 <- inferPatExp pe1 t1
-                z2 <- inferPatExp pe2 t2
-                return (z1 . z2)
-            _ -> error "wrong tuple matching" -- FIXME
+        SFL.PETuple pe1 pe2 -> do
+            free1 <- fresh
+            free2 <- fresh
+            catchPatternMatch (unify (TypeConstr "tuple" [TypeVar free1, TypeVar free2]) zonked) patExp zonked
+            liftIO (zonk zonked) >>= \case
+                TypeConstr "tuple" [t1, t2] -> do
+                    z1 <- inferPatExp pe1 t1
+                    z2 <- inferPatExp pe2 t2
+                    return (z1 . z2)
+                _ -> error "wrong tuple matching"
         SFL.PECons pe1 pe2 -> do
             free<- fresh
-            unify (TypeConstr "list" [TypeVar free]) zonked
+            catchPatternMatch (unify (TypeConstr "list" [TypeVar free]) zonked) patExp zonked
             liftIO (zonk zonked) >>= \case
                 TypeConstr "list" [lt] -> do
                     z1 <- inferPatExp pe1 lt
                     z2 <- inferPatExp pe2 $ TypeConstr "list" [lt]
                     return (z1 . z2)
-                _ -> error $ "wrong cons matching" -- FIXME
+                _ -> error $ "wrong cons matching"
         SFL.PEPat (SFL.PatVar (SFL.Ident name)) -> do
             ts <- generalize zonked
             return  $ envInsert name ts
         SFL.PEPat (SFL.PatTConstr (SFL.UIdent name) pats) -> do
+            -- TODO jakieś unify??
             case zonked of
                 TypeConstr n args -> if n == name
                     then do
@@ -103,13 +103,21 @@ inferPatExp patExp ttt = do
                             comp [] = id
                             comp (h:t) = h . (comp t)
                         return  composed
-                    else error "constructor names mismatch!" -- FIXME
-                _ -> error "wrong type constr."
+                    else error "constructor names mismatch!" -- TODO throwError?
+                _ -> error "wrong type constructor"
         SFL.PEPat SFL.PatWild -> return id
-        SFL.PEPat SFL.PatTrue -> return id -- TODO może trzeba mimo wszystko sprawdzić ten typ?
-        SFL.PEPat SFL.PatFalse -> return id
-        SFL.PEPat (SFL.PatInt _) -> return id
-
+        SFL.PEPat SFL.PatTrue -> unify tBool zonked >> return id
+        SFL.PEPat SFL.PatFalse -> unify tBool zonked >> return id
+        SFL.PEPat (SFL.PatInt _) -> unify tInt zonked >> return id
+        SFL.PEPat (SFL.PatList elems) -> do
+                free <- fresh
+                catchPatternMatch (unify (TypeConstr "list" [TypeVar free]) zonked) patExp zonked
+                liftIO (zonk zonked) >>= \case
+                    TypeConstr "list" [lt] -> do
+                        let patExps = map (\(SFL.PatLElem p) -> p) elems
+                        zs <- mapM (flip inferPatExp lt) patExps
+                        return $ foldr (.) id zs
+                    _ -> error $ "wrong list matching"
 
 instantiate :: TypeScheme -> Tc Type
 instantiate (Forall tvs t) = do
@@ -136,7 +144,6 @@ unifyVar tv@(TV _ ioref) t reversed = liftIO (readIORef ioref) >>= \case
                 raiseOccursCheckError tv zonked
             else
                 liftIO $ writeIORef ioref (Just zonked)
-
 
 letRecEnvModifier :: String -> Exp -> Tc (Env -> Env)
 letRecEnvModifier name e = do

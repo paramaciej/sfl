@@ -5,7 +5,7 @@ ExpStmt.    Stmt ::= Exp;
 
 TypeConstr. TC ::= UIdent [Ident] ;
 TypeDecl.   Stmt ::= "type" UIdent [Ident] "=" [TC];
-separator nonempty TC "|";
+separator   nonempty TC "|";
 
 
 
@@ -28,17 +28,20 @@ ELetRec.    Exp ::= "let" "rec" Ident "=" Exp "in" Exp;
 PatInt.     Pat ::= Integer;
 PatTrue.    Pat ::= "True";
 PatFalse.   Pat ::= "False";
-PatEList.   Pat ::= "[" "]";
+PatList.    Pat ::= "[" [PLEl] "]";
 PatVar.     Pat ::= Ident;
 PatTConstr. Pat ::= UIdent [PatExp];
 PatWild.    Pat ::= "_";
 
 PETuple.    PatExp ::= PatExp "," PatExp1;
-PECons.     PatExp1 ::= PatExp1 ":" PatExp2;
+PECons.     PatExp1 ::= PatExp2 ":" PatExp1;
 PEPat.      PatExp2 ::= Pat;
-coercions PatExp 2;
+coercions   PatExp 2;
 
-terminator PatExp "";
+PatLElem.       PLEl ::= PatExp1;
+separator   PLEl ",";
+
+terminator  PatExp "";
 
 ETuple.     Exp ::= Exp1 "," [Exp1];
 ECons.      Exp1 ::= Exp2 ":" Exp1;
@@ -58,7 +61,7 @@ EDiv.       Exp7 ::= Exp7 "/" Exp8;
 EMod.       Exp7 ::= Exp7 "%" Exp8;
 EApp.       Exp8 ::= Exp8 [Exp9];
 ELiteral.   Exp9 ::= Literal;
-coercions Exp 9;
+coercions   Exp 9;
 
 LInt.       Literal ::= Integer;
 LTrue.      Literal ::= "True";
@@ -76,10 +79,10 @@ separator   LElem ",";
 ETCElem.    ETCEl ::= Exp1;
 separator   ETCEl "";
 
-separator Stmt ";";
-separator nonempty MatchCase ";";
-terminator Ident "";
-terminator Pat "";
-terminator nonempty Exp9 "";
+separator   Stmt ";";
+separator   nonempty MatchCase ";";
+terminator  Ident "";
+terminator  Pat "";
+terminator  nonempty Exp9 "";
 
-comment "#";
+comment     "#";

@@ -3,8 +3,9 @@ module Interpreter.PatEval where
 
 import Interpreter.Types
 import AbsSFL as SFL
-import Data.Map
+import qualified Data.Map as M
 import Control.Monad.Reader
+import Control.Monad.Except
 
 patEval :: SFL.PatExp -> Value -> VE (ValEnv -> ValEnv)
 patEval patExp val = case patExp of
@@ -21,7 +22,7 @@ patEval patExp val = case patExp of
             return (ev1 . ev2)
         VList [] -> error $ "matching with empty list!" -- FIXME
         _ -> error $ "wrong value for list: " ++ show val -- FIXME
-    PEPat (PatVar (Ident name)) -> return $ insert name val
+    PEPat (PatVar (Ident name)) -> return $ M.insert name val
     PEPat (PatTConstr (UIdent name) pats) -> case val of
         VConstr n vs -> if n == name
             then do
@@ -35,6 +36,15 @@ patEval patExp val = case patExp of
     PEPat (PatWild) -> return id
     PEPat (PatTrue) -> return id
     PEPat (PatFalse) -> return id
+    PEPat (PatList elems) -> do
+        let patExps = map (\(PatLElem p) -> p) elems
+        case val of
+            VList vals -> if length patExps == length vals
+                then do
+                    evs <- mapM (\(p, v) -> patEval p v) (zip patExps vals)
+                    return $ foldr (.) id evs
+                else throwError "no lol... (length mismatch)"
+            _ -> error $ "wrong value for list: " ++ show val
     PEPat (PatInt _) -> return id
 
 
@@ -57,10 +67,12 @@ patEquals patExp val = case patExp of
     PEPat (PatFalse) -> case val of
         VBool b -> b == False
         _ -> error "trutututu tam" -- TODO
-    PEPat (PatEList) -> case val of
-        VList [] -> True
-        VList (_:_) -> False
-        _ -> error "ttruruiirwpe" -- TODO
+    PEPat (PatList elems) -> let patExps = map (\(PatLElem patExp) -> patExp) elems
+        in case val of
+            VList vals -> if length patExps == length vals
+                then all (\(p, v) -> patEquals p v) (zip patExps vals)
+                else False
+            _ -> error "ttruruiirwpe" -- TODO
     PEPat (PatInt x) -> case val of
         VInt y -> x == y
         _ -> error " xxxx " -- TODO

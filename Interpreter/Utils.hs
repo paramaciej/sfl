@@ -16,7 +16,7 @@ import TypeChecker.Show
 inferredType :: SFL.Exp -> PrSt Type
 inferredType e = do
     env <- gets types
-    let inferError tExp =  show tExp ++ "\n\tin\n\t>" ++ printTree e
+    let inferError tExp =  show tExp ++ "\nin expression:\n" ++ printTree e
     liftIO (runReaderT (runExceptT (infer $ tcExp e)) env) >>= either (throwError . inferError) (liftIO . zonk)
 
 typeStr :: SFL.Exp -> PrSt String
@@ -29,7 +29,7 @@ typeStr e = do
 evaluatedExp :: SFL.Exp -> PrSt Value
 evaluatedExp e = do
     env <- gets values
-    liftIO $ runReaderT (eval (tcExp e)) env
+    liftIO (runReaderT (runExceptT (eval (tcExp e))) env) >>= either (throwError) return
 
 showExp :: SFL.Exp -> PrSt String
 showExp e = do
