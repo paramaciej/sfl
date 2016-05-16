@@ -36,7 +36,6 @@ eval = \case
     ELetRec name e body -> do
         rec val <- local (M.insert name val) $ eval e
         local (M.insert name val) $ eval body
-
     EInt n -> return $ VInt n
     EBool b -> return $ VBool b
     EIf cond eTrue eFalse -> do
@@ -48,14 +47,14 @@ eval = \case
     EMatch e cases -> do
         val <- eval e -- TODO skończyć to
         evalPatchMatch cases val
-
-
-    EConstr "tuple" exps -> do
+    EConstr name -> do
+        m <- ask
+        case M.lookup name m of
+            Just v -> return v
+            Nothing -> error "constr id not found"
+    ETuple exps -> do
         vals <- mapM eval exps
         return $ VTuple vals
-    EConstr name exps -> do
-        vals <- mapM eval exps
-        return $ VConstr name vals
 
 
 evalPatchMatch :: [(SFL.PatExp, Exp)] -> Value -> VE Value

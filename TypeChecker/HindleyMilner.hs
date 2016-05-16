@@ -62,12 +62,15 @@ infer (EMatch e cases) = do
             return m
         [] -> throwError EmptyMatchError
 
-infer (EConstr name es) = do
+infer (EConstr name) = do
     constructor <- asks (M.lookup name . typeConstrs)
-    xs <- mapM infer es
     case constructor of
-        Just constr -> typeTrans constr xs
+        Just constr -> instantiate $ constrType constr
         Nothing -> throwError $ UndefinedError $ "constructor: " ++ name
+
+infer (ETuple es) = do
+    ts <- mapM infer es
+    return $ TypeConstr "tuple" ts
 
 
 inferPatExp :: SFL.PatExp -> Type -> Tc (Env -> Env)

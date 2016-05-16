@@ -3,12 +3,14 @@ token UIdent (upper (letter | digit | '_')*);
 Prog.       Program ::= [Stmt];
 ExpStmt.    Stmt ::= Exp;
 
-TypeConstr. TC ::= UIdent [TCArg];
+TConstr.    TC ::= UIdent [TCArg];
+TConstrS.   TC1 ::= UIdent;
 TCAIdent.   TCArg ::= Ident;
-TCAArg.     TCArg ::= TC;
+TCAArg.     TCArg ::= TC1;
 TypeDecl.   Stmt ::= "type" UIdent [Ident] "=" [TC];
+coercions  TC 1;
 separator   nonempty TC "|";
-terminator  TCArg "";
+terminator  nonempty TCArg "";
 
 
 
@@ -71,16 +73,13 @@ LTrue.      Literal ::= "True";
 LFalse.     Literal ::= "False";
 LList.      Literal ::= "[" [LElem] "]";
 LVar.       Literal ::= Ident;
-LTConstr.   Literal ::= UIdent [ETCEl];
+LTConstr.   Literal ::= UIdent;
 
 
 separator   nonempty Exp1 ",";
 
 EListElem.  LElem ::= Exp1;
 separator   LElem ",";
-
-ETCElem.    ETCEl ::= Exp9;
-separator   ETCEl "";
 
 separator   Stmt ";";
 separator   nonempty MatchCase ";";

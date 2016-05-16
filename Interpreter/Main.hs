@@ -18,6 +18,7 @@ import Interpreter.Utils
 import System.Environment
 import System.IO
 import UserTypes.Declare
+import UserTypes.Vals
 
 
 defState :: IO ProgramEnv
@@ -83,8 +84,9 @@ handleStmt = \case
             handleDecl = do
                 PrEnv typeSt valSt <- get
                 xx <- liftIO $ runReaderT (runExceptT $ declareType tDecl) typeSt >>= either (fail . show) return
+                yy <- liftIO $ runReaderT (runExceptT $ defineConstrs tDecl) valSt >>= either (fail . show) return
                 liftIO $ putStrLn $ "OK!"
-                put $ PrEnv (xx typeSt) valSt
+                put $ PrEnv (xx typeSt) (yy valSt)
 
         Function name arg args body -> handleStmt
             (Value name (SFL.ELetRec name (lamCurry (arg:args) body) (SFL.ELiteral $ SFL.LVar name)))

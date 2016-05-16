@@ -51,14 +51,15 @@ auxShowType t = liftIO (zonk t) >>= \case
                         return $ surroundSGR [SetColor Foreground Vivid Green] name ++ concatMap (" " ++) argStrs
                       where
                         xxx tt = case tt of
-                            TypeConstr "->" _ -> auxShowType tt
+                            TypeConstr "->" _ -> surround tt
                             TypeConstr "tuple" _ -> auxShowType tt
                             TypeConstr "list" _ -> auxShowType tt
                             TypeConstr _ [] -> auxShowType tt
-                            TypeConstr _ _ -> do
-                                tStr <- auxShowType tt
-                                return $ "(" ++ tStr ++ ")"
+                            TypeConstr _ _ -> surround tt
                             TypeVar _ -> auxShowType tt
+                        surround tt = do
+                            tStr <- auxShowType tt
+                            return $ "(" ++ tStr ++ ")"
         TypeVar tv -> do
             t' <- asks $ lookup tv
             return $ fromMaybe (show tv) t'

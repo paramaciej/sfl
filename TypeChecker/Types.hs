@@ -26,7 +26,7 @@ data Env = Env {
     schemeMap :: M.Map String TypeScheme,
     typeConstrs :: M.Map String TCEntry}
 
-data TCEntry = TCEntry { typeName :: String, typeTrans :: [Type] -> Tc Type}
+data TCEntry = TCEntry { typeName :: String, constrType :: TypeScheme}
 
 type Tc = ExceptT TypeException (ReaderT Env IO)
 
@@ -40,7 +40,8 @@ data Exp
     | EBool Bool
     | EIf Exp Exp Exp
     | EMatch Exp [(SFL.PatExp, Exp)]
-    | EConstr String [Exp] deriving Show
+    | EConstr String
+    | ETuple [Exp] deriving Show
 
 
 tInt :: Type

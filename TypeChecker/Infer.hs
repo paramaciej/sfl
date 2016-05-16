@@ -15,8 +15,10 @@ tcExp = \case
     SFL.EIf cond e1 e2 -> EIf (tcExp cond) (tcExp e1) (tcExp e2)
     SFL.ELet patExp e body -> ELet patExp (tcExp e) (tcExp body)
     SFL.ELetRec (SFL.Ident name) e body -> ELetRec name (tcExp e) (tcExp body)
-    SFL.ETuple e es -> EConstr "tuple" (tcExp <$> e:es)
-    SFL.ECons e1 e2 -> EApp (EApp (EVar "cons") (tcExp e1)) (tcExp e2)
+    SFL.ETuple e es -> ETuple (tcExp <$> e:es)
+--    SFL.ETuple e es -> fapp "_tuple" (e:es)
+--    SFL.ECons e1 e2 -> EApp (EApp (EVar "cons") (tcExp e1)) (tcExp e2)
+    SFL.ECons e1 e2 -> fapp "cons" [e1, e2]
     SFL.EOr e1 e2 -> fapp "_or" [e1, e2]
     SFL.EAnd e1 e2 -> fapp "_and" [e1, e2]
     SFL.ENot e -> fapp "_not" [e]
@@ -37,7 +39,7 @@ tcExp = \case
     SFL.ELiteral SFL.LFalse -> EBool False
     SFL.ELiteral (SFL.LList lElems) -> foldr (\(SFL.EListElem e) acc -> mulEApp (EVar "cons") [tcExp e, acc]) (EVar "[]") lElems
     SFL.ELiteral (SFL.LVar (SFL.Ident name)) -> EVar name
-    SFL.ELiteral (SFL.LTConstr (SFL.UIdent name) args) -> EConstr name ((tcExp . (\(SFL.ETCElem e) -> e))<$> args)
+    SFL.ELiteral (SFL.LTConstr (SFL.UIdent name)) -> EConstr name
 
 fapp :: String -> [SFL.Exp] -> Exp
 fapp name exps = mulEApp (EVar name) (tcExp <$> exps)
