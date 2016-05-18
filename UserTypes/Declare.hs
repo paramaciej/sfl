@@ -7,16 +7,17 @@ import Control.Monad.Reader
 import TypeChecker.Types
 import qualified Data.Map as M
 import TypeChecker.Utils
+import TypeChecker.HindleyMilner
 
 declareType :: SFL.Stmt -> Tc (Env -> Env)
 declareType = \case
     SFL.TypeDecl (SFL.UIdent typeName) params constructors -> do
 --        decls <- gets (typeConstrs . types)
-        Env _ _ tcs <- ask
+        Env _ _ envTCs <- ask
 
-        liftIO $ putStrLn $ "no elo. declared constrs: " ++ unlines (M.keys tcs)
+        liftIO $ putStrLn $ "no elo. declared constrs: " ++ unlines (M.keys envTCs)
 
-        modifications <- mapM (xxxTC typeName params) constructors
+        modifications <- mapM (xxxTC envTCs typeName params) constructors
         return $ foldr (.) id modifications
     _ -> error "type declaration with other expression"
 
@@ -25,8 +26,8 @@ getFrees = mapM $ \(SFL.Ident name) -> do
     free <- fresh
     return (name, free)
 
-xxxTC :: String -> [SFL.Ident] -> SFL.TC -> Tc (Env -> Env)
-xxxTC typeName params = \case
+xxxTC :: M.Map String TCEntry -> String -> [SFL.Ident] -> SFL.TC -> Tc (Env -> Env)
+xxxTC envTCs typeName params = \case
     SFL.TConstrS (SFL.UIdent constrName) -> do
         constrTypeScheme <- do
             frees <- getFrees params
@@ -40,12 +41,29 @@ xxxTC typeName params = \case
                 SFL.TCAIdent (SFL.Ident tcArgName) -> case lookup tcArgName frees of
                     Just x -> return $ TypeVar x
                     Nothing -> error "TODO UNDEF" -- TODO
-                SFL.TCAArg tc -> error "TODO" -- TOOD
+                SFL.TCAArg arg -> return $ smieszken frees arg
+--                case arg of
+--                    SFL.TConstrS (SFL.UIdent name) -> return $ TypeConstr name [] -- tODO jakaś weryfikacja
+--                    SFL.TConstr (SFL.UIdent name) args ->
+--                    SFL.TConstrS (SFL.UIdent name) -> case M.lookup name envTCs of -- TODO źle, bo tu ma być typ, a nie konstr!!!
+--                        Just x -> instantiate $ constrType x
+--                        Nothing -> error "unknown tconstrS"
+--                    error "TODO" -- TOOD
 
             generalize $ foldr (\x acc -> TypeConstr "->" [x, acc]) (TypeConstr typeName $ varsFromFrees frees) xtypes
         return $ \(Env m sm tcs) -> Env m sm (M.insert constrName (TCEntry typeName constrTypeScheme) tcs)
   where
     varsFromFrees = map $ \(_, tv) -> TypeVar tv
+
+
+smieszken :: [(String, TypeVar)] -> SFL.TC -> Type
+smieszken frees = \case
+    SFL.TConstrS (SFL.UIdent name) -> TypeConstr name [] -- todo weryfikacja nazwy!
+    SFL.TConstr (SFL.UIdent name) args -> TypeConstr name $ map (\case
+            SFL.TCAIdent (SFL.Ident n) -> case lookup n frees of
+                Just x -> TypeVar x
+                Nothing -> error "xxxx UNDEF"
+            SFL.TCAArg tc -> smieszken frees tc) args
 
 --    SFL.TConstr (SFL.UIdent constrName)
 --
