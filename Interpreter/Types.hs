@@ -39,4 +39,8 @@ instance Show Value where
             blue "(" ++ intercalate (blue ", ") (Prelude.map show tuple) ++ blue ")"
         VFun _ -> surroundSGR [SetColor Foreground Dull Yellow] "function"
         VConstr name vals -> surroundSGR [SetColor Foreground Dull Green] name ++
-            concatMap (\x -> " " ++ show x) vals -- TODO fix displaying
+            concatMap (\val -> " " ++ showArg val) vals
+          where
+            showArg v = case v of
+                VConstr _ (_:_) -> "(" ++ show v ++ ")"
+                _ -> show v

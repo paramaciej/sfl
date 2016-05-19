@@ -16,28 +16,32 @@ ops = do
 
 
     let o =  fromList [
-                ("add", binIntOp),
-                ("sub", binIntOp),
-                ("mul", binIntOp),
-                ("div", binIntOp),
-                ("mod", binIntOp),
+            ("add", binIntOp),
+            ("sub", binIntOp),
+            ("mul", binIntOp),
+            ("div", binIntOp),
+            ("mod", binIntOp),
 
-                ("_and", binBoolOp),
-                ("_or", binBoolOp),
-                ("_not", Forall [] $ mulTApp [tBool] tBool),
+            ("_and", binBoolOp),
+            ("_or", binBoolOp),
+            ("_not", Forall [] $ mulTApp [tBool] tBool),
 
-                ("_lt", cmpOp),
-                ("_lte", cmpOp),
-                ("_gt", cmpOp),
-                ("_gte", cmpOp),
-                ("_eq", cmpOp),
-                ("_neq", cmpOp),
+            ("_lt", cmpOp),
+            ("_lte", cmpOp),
+            ("_gt", cmpOp),
+            ("_gte", cmpOp),
+            ("_eq", cmpOp),
+            ("_neq", cmpOp),
 
-                ("[]", Forall [fr] $ TypeConstr "list" [TypeVar fr]),
-                ("cons", Forall [fr] $ mulTApp [TypeVar fr, TypeConstr "list" [TypeVar fr]] (TypeConstr "list" [TypeVar fr])),
-                ("_infer_if", Forall [fr] $ mulTApp [tBool, TypeVar fr, TypeVar fr] (TypeVar fr))
-                ]
-    local (\(Env m _ tc) -> Env m o tc) ask
+            ("[]", Forall [fr] $ TypeConstr "list" [TypeVar fr]),
+            ("cons", Forall [fr] $ mulTApp [TypeVar fr, TypeConstr "list" [TypeVar fr]] (TypeConstr "list" [TypeVar fr])),
+            ("_infer_if", Forall [fr] $ mulTApp [tBool, TypeVar fr, TypeVar fr] (TypeVar fr))
+            ]
+    let td = fromList [
+            ("Int", 0),
+            ("Bool", 0)
+            ]
+    local (\(Env m _ tc _) -> Env m o tc td) ask
 
 eee :: (Map String Value)
 eee = fromList [

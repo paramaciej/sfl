@@ -12,6 +12,7 @@ data TypeException
     | DifferentCaseTypesError TypeException
     | PatternMatchingError String String TypeException
     | ConstructorArgsNumber String Int Int
+    | TypeArgsNumber String Int Int
 
 data MismatchError = MismatchError String String (Maybe MismatchError)
 
@@ -33,6 +34,10 @@ instance Show TypeException where
         ConstructorArgsNumber constrName rightNumber wrongNumber ->
             "Type constructor '" ++ constrName ++ "' requires " ++ show rightNumber ++ " arguments " ++
             "(" ++ show wrongNumber ++ " was given)."
+        TypeArgsNumber tName rightNumber wrongNumber ->
+            "Type '" ++ tName ++ "' requires " ++ show rightNumber ++ " type arguments " ++
+            "(" ++ show wrongNumber ++ " was given)."
+
 
 
 instance Show MismatchError where

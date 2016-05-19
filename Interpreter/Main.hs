@@ -24,7 +24,7 @@ import UserTypes.Vals
 defState :: IO ProgramEnv
 defState = do
     ref <- newIORef 0
-    stdTypes <- runReaderT (runExceptT ops) (Env ref empty empty) >>= either (fail . show) return
+    stdTypes <- runReaderT (runExceptT ops) (Env ref empty empty empty) >>= either (fail . show) return
     return $ PrEnv stdTypes eee
 
 main :: IO ()
@@ -37,7 +37,7 @@ main = do
             _ <- runStateT (runExceptT userLines) prEnv
             putStrLn "Goodbye."
         (filename:_) -> do
-            runStateT (runExceptT $ fromFile filename) prEnv
+            _ <- runStateT (runExceptT $ fromFile filename) prEnv
             return ()
 
 

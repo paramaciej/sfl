@@ -47,10 +47,10 @@ auxShowType t = liftIO (zonk t) >>= \case
                     _ -> error "Wrong number of aeguments for Bool!"
                 _ -> \case
                     args -> do
-                        argStrs <- mapM xxx args
+                        argStrs <- mapM getArgStr args
                         return $ surroundSGR [SetColor Foreground Vivid Green] name ++ concatMap (" " ++) argStrs
                       where
-                        xxx tt = case tt of
+                        getArgStr tt = case tt of
                             TypeConstr "->" _ -> surround tt
                             TypeConstr "tuple" _ -> auxShowType tt
                             TypeConstr "list" _ -> auxShowType tt

@@ -24,7 +24,8 @@ data TypeScheme = Forall [TypeVar] Type
 data Env = Env {
     maxIORef :: IORef Int,
     schemeMap :: M.Map String TypeScheme,
-    typeConstrs :: M.Map String TCEntry}
+    typeConstrs :: M.Map String TCEntry,
+    typeDefs :: M.Map String Int}
 
 data TCEntry = TCEntry { typeName :: String, constrType :: TypeScheme}
 
