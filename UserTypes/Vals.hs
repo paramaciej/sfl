@@ -8,13 +8,13 @@ import Interpreter.Types
 
 defineConstrs :: SFL.Stmt -> VE (ValEnv -> ValEnv)
 defineConstrs = \case
-    SFL.TypeDecl (SFL.UIdent typeName) params constructors -> do
-        modifications <- mapM (yyyTC typeName params) constructors
+    SFL.TypeDecl (SFL.UIdent _) _ constructors -> do
+        modifications <- mapM (modConstr) constructors
         return $ foldr (.) id modifications
-    _ -> error "type decl. with other expr" -- TODO
+    _ -> error "type declaration with other expression"
 
-yyyTC :: String -> [SFL.Ident] -> SFL.TC -> VE (ValEnv -> ValEnv)
-yyyTC typeName params = \case
+modConstr :: SFL.TC -> VE (ValEnv -> ValEnv)
+modConstr = \case
     SFL.TConstrS (SFL.UIdent constrName) -> return $ M.insert constrName $ VConstr constrName []
     SFL.TConstr (SFL.UIdent constrName) tcArgs -> return $ M.insert constrName $ mkCtor constrName (length tcArgs)
 

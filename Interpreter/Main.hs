@@ -3,20 +3,19 @@
 import AbsSFL as SFL
 import ParSFL
 import ErrM
-import TypeChecker.HindleyMilner
-import TypeChecker.Utils
-import TypeChecker.Show
-import TypeChecker.Types
-import Control.Monad.State
-import Control.Monad.Reader
 import Control.Monad.Except
-import StdLib.Operators
-import Data.Map
+import Control.Monad.Reader
+import Control.Monad.State
 import Data.IORef
+import Data.Map
 import Interpreter.Types
 import Interpreter.Utils
+import StdLib.Operators
 import System.Environment
 import System.IO
+import TypeChecker.Show
+import TypeChecker.Types
+import TypeChecker.Utils
 import UserTypes.Declare
 import UserTypes.Vals
 
@@ -83,10 +82,11 @@ handleStmt = \case
           where
             handleDecl = do
                 PrEnv typeSt valSt <- get
-                xx <- liftIO $ runReaderT (runExceptT $ declareType tDecl) typeSt >>= either (fail . show) return
-                yy <- liftIO $ runReaderT (runExceptT $ defineConstrs tDecl) valSt >>= either (fail . show) return
-                liftIO $ putStrLn $ "OK!"
-                put $ PrEnv (xx typeSt) (yy valSt)
+                modTypeSt <- liftIO (runReaderT (runExceptT $ declareType tDecl) typeSt)
+                    >>= either (throwError . show) return
+                modValSt <- liftIO (runReaderT (runExceptT $ defineConstrs tDecl) valSt)
+                    >>= either (throwError . show) return
+                put $ PrEnv (modTypeSt typeSt) (modValSt valSt)
 
         Function name arg args body -> handleStmt
             (Value name (SFL.ELetRec name (lamCurry (arg:args) body) (SFL.ELiteral $ SFL.LVar name)))

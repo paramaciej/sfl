@@ -13,6 +13,8 @@ data TypeException
     | PatternMatchingError String String TypeException
     | ConstructorArgsNumber String Int Int
     | TypeArgsNumber String Int Int
+    | TypeDeclared String
+    | ConstrDeclared String
 
 data MismatchError = MismatchError String String (Maybe MismatchError)
 
@@ -35,8 +37,10 @@ instance Show TypeException where
             "Type constructor '" ++ constrName ++ "' requires " ++ show rightNumber ++ " arguments " ++
             "(" ++ show wrongNumber ++ " was given)."
         TypeArgsNumber tName rightNumber wrongNumber ->
-            "Type '" ++ tName ++ "' requires " ++ show rightNumber ++ " type arguments " ++
+            "Type '" ++ tName ++ "' requires " ++ show rightNumber ++ " parameters " ++
             "(" ++ show wrongNumber ++ " was given)."
+        TypeDeclared tName -> "The type '" ++ tName ++ "' has been already declared."
+        ConstrDeclared cName -> "The type constructor '" ++ cName ++ "' has been already declared."
 
 
 
