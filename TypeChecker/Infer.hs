@@ -8,16 +8,13 @@ import TypeChecker.Utils
 tcExp :: SFL.Exp -> Exp
 tcExp = \case
     SFL.ELam (SFL.Ident name) body -> case body of
-        SFL.FBodyMatch _ -> error "not yet implemented!"  -- TODO
+        SFL.FBodyMatch mBody -> ELam name $ tcExp (SFL.EMatch (SFL.ELiteral (SFL.LVar (SFL.Ident name))) mBody)
         SFL.FBodyExp e -> ELam name (tcExp e)
-
     SFL.EMatch e (SFL.MBody cases) -> EMatch (tcExp e) (map (\(SFL.MCase patExp body) -> (patExp, tcExp body)) cases)
     SFL.EIf cond e1 e2 -> EIf (tcExp cond) (tcExp e1) (tcExp e2)
     SFL.ELet patExp e body -> ELet patExp (tcExp e) (tcExp body)
     SFL.ELetRec (SFL.Ident name) e body -> ELetRec name (tcExp e) (tcExp body)
     SFL.ETuple e es -> ETuple (tcExp <$> e:es)
---    SFL.ETuple e es -> fapp "_tuple" (e:es)
---    SFL.ECons e1 e2 -> EApp (EApp (EVar "cons") (tcExp e1)) (tcExp e2)
     SFL.ECons e1 e2 -> fapp "cons" [e1, e2]
     SFL.EOr e1 e2 -> fapp "_or" [e1, e2]
     SFL.EAnd e1 e2 -> fapp "_and" [e1, e2]
