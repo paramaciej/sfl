@@ -14,7 +14,7 @@ import Exceptions.Utils
 
 infer :: Exp -> Tc Type
 infer (EVar x) = do
-    mts <- asks $ (M.lookup x) . schemeMap
+    mts <- asks $ M.lookup x . schemeMap
     case mts of
         Just ts -> instantiate ts
         Nothing -> throwError $ UndefinedError x
@@ -51,14 +51,14 @@ infer (EIf cond eTrue eFalse) =
 
 infer (EMatch e cases) = do
     t <- infer e
-    let aux = \(patExp, caseBody) -> do
+    let aux (patExp, caseBody) = do
         mods <- inferPatExp patExp t
         local mods $ infer caseBody
 
     modifiers <- mapM aux cases
     case modifiers of
         (m:ms) -> do
-            mapM_ (\x -> catchMatchInfer (unify m x)) ms
+            mapM_ (catchMatchInfer . unify m) ms
             return m
         [] -> throwError EmptyMatchError
 
@@ -95,7 +95,7 @@ inferPatExp patExp ttt = do
                     z1 <- inferPatExp pe1 lt
                     z2 <- inferPatExp pe2 $ TypeConstr "list" [lt]
                     return (z1 . z2)
-                _ -> error $ "wrong cons matching"
+                _ -> error "wrong cons matching"
         SFL.PEPat (SFL.PatVar (SFL.Ident name)) -> do
             ts <- generalize zonked
             return  $ envInsert name ts
@@ -108,7 +108,7 @@ inferPatExp patExp ttt = do
                     case zonked of
                         TypeConstr n args -> if n == xname
                             then do
-                                zs <- mapM (\(p, a) -> inferPatExp p a) (zip pats args)
+                                zs <- zipWithM inferPatExp pats args
                                 return $ foldr (.) id zs
                             else error $ "constructor names mismatch! : " ++ n ++ " / " ++ xname -- TODO throwError?
                         _ -> error "wrong type constructor"
@@ -124,22 +124,21 @@ inferPatExp patExp ttt = do
                 liftIO (zonk zonked) >>= \case
                     TypeConstr "list" [lt] -> do
                         let patExps = map (\(SFL.PatLElem p) -> p) elems
-                        zs <- mapM (flip inferPatExp lt) patExps
+                        zs <- mapM (`inferPatExp` lt) patExps
                         return $ foldr (.) id zs
-                    _ -> error $ "wrong list matching"
+                    _ -> error "wrong list matching"
 
 instantiate :: TypeScheme -> Tc Type
 instantiate (Forall tvs t) = do
     tvs' <- mapM (const fresh) tvs
     let subst = zip tvs tvs'
-    liftIO $ zonk t >>= return . (applySubstr subst)
+    liftIO $ liftM (applySubstr subst) (zonk t)
 
 unify :: Type -> Type -> Tc ()
 unify (TypeVar tv) t' = unifyVar tv t' False
 unify t (TypeVar tv') = unifyVar tv' t True
 unify t@(TypeConstr name args) t'@(TypeConstr name' args')
-    | name == name' = do
-        catchError (zipWithM_ unify args args') (raiseMismatchError t t' . Just)
+    | name == name' = catchError (zipWithM_ unify args args') (raiseMismatchError t t' . Just)
     | otherwise = raiseMismatchError t t' Nothing
 
 unifyVar :: TypeVar -> Type -> Bool -> Tc ()

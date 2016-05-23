@@ -29,7 +29,7 @@ typeStr e = do
 evaluatedExp :: SFL.Exp -> PrSt Value
 evaluatedExp e = do
     env <- gets values
-    liftIO (runReaderT (runExceptT (eval (tcExp e))) env) >>= either (throwError) return
+    liftIO (runReaderT (runExceptT (eval (tcExp e))) env) >>= either throwError return
 
 showExp :: SFL.Exp -> PrSt String
 showExp e = do

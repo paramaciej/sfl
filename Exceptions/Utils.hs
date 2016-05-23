@@ -22,7 +22,7 @@ raiseOccursCheckError tv t = do
 
 
 catchAppInfer :: Tc() -> Type -> Type -> Tc ()
-catchAppInfer unify funT argT = do
+catchAppInfer unify funT argT =
     catchError unify handle where
         handle err = do
             funStr <- showType funT
@@ -30,19 +30,19 @@ catchAppInfer unify funT argT = do
             throwError $ ApplicationTypeError funStr argStr err
 
 catchIfInfer :: Tc Type -> Tc Type
-catchIfInfer ifInfer = do
+catchIfInfer ifInfer =
     catchError ifInfer handle where
         handle :: TypeException -> Tc Type
         handle err = throwError $ InferError "Type error in if expression." err
 
 catchMatchInfer :: Tc () -> Tc ()
-catchMatchInfer unify = do
+catchMatchInfer unify =
     catchError unify handle where
         handle :: TypeException -> Tc ()
         handle err = throwError $ DifferentCaseTypesError err
 
 catchPatternMatch :: Tc () -> PatExp -> Type -> Tc ()
-catchPatternMatch unify patExp t = do
+catchPatternMatch unify patExp t =
     catchError unify handle where
         handle err = do
             tStr <- showType t

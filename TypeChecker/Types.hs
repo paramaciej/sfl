@@ -11,7 +11,7 @@ import qualified AbsSFL as SFL
 
 data TypeVar = TV Int (IORef (Maybe Type))
 
-instance Eq TypeVar where -- TODO a może jednak po prostu deriving Eq?
+instance Eq TypeVar where
     (TV _ ioref) == (TV _ ioref') = ioref == ioref'
 
 instance Show TypeVar where

@@ -9,7 +9,7 @@ import Interpreter.Types
 defineConstrs :: SFL.Stmt -> VE (ValEnv -> ValEnv)
 defineConstrs = \case
     SFL.TypeDecl (SFL.UIdent _) _ constructors -> do
-        modifications <- mapM (modConstr) constructors
+        modifications <- mapM modConstr constructors
         return $ foldr (.) id modifications
     _ -> error "type declaration with other expression"
 

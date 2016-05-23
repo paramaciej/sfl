@@ -77,8 +77,7 @@ handleStmt :: Stmt -> PrSt ()
 handleStmt = \case
         ExpStmt expStmt -> catchError (printExp expStmt) (liftIO . hPutStrLn stderr)
 
-        tDecl@(TypeDecl _ _ _) -> do
-            catchError (handleDecl) (liftIO . hPutStrLn stderr)
+        tDecl@(TypeDecl {}) -> catchError handleDecl (liftIO . hPutStrLn stderr)
           where
             handleDecl = do
                 PrEnv typeSt valSt <- get
@@ -95,8 +94,7 @@ handleStmt = \case
             lamCurry (a:as) b = SFL.ELam a $ FBodyExp $ lamCurry as b
             lamCurry [] _ = error "impossible (function with no arguments)"
 
-        Value (Ident name) e -> do
-            catchError (handleValue) (liftIO . hPutStrLn stderr)
+        Value (Ident name) e -> catchError handleValue (liftIO . hPutStrLn stderr)
           where
             handleValue = do
                 PrEnv typSt valSt <- get

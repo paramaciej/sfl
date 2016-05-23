@@ -45,4 +45,4 @@ instance Show TypeException where
 
 
 instance Show MismatchError where
-    show (MismatchError s s' mMerr) = (maybe "" show mMerr) ++ "\n  at " ++ s ++ " and " ++ s'
+    show (MismatchError s s' mMerr) = maybe "" show mMerr ++ "\n  at " ++ s ++ " and " ++ s'
