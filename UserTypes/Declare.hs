@@ -6,6 +6,7 @@ import qualified AbsSFL as SFL
 import qualified Data.Map as M
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.List
 import Exceptions.Types
 import TypeChecker.Types
 import TypeChecker.Utils
@@ -15,11 +16,13 @@ declareType = \case
     SFL.TypeDecl (SFL.UIdent tName) params constructors -> do
         typeNameFree <- asks (M.notMember tName . typeDefs)
         if typeNameFree
-            then do
-                modifications <- mapM (addTypeConstr tName params) constructors
-                return $ foldr (.) id modifications
+            then if length (nub $ map getTCName constructors) == length constructors
+                then do
+                    modifications <- mapM (addTypeConstr tName params) constructors
+                    return $ foldr (.) id modifications
+                else throwError $ DuplicatedConstructors
             else throwError $ TypeDeclared tName
-    _ -> error "type declaration with other expression"
+    _ -> error "type declaration with different expression"
 
 getFrees :: [SFL.Ident] -> Tc [(String, TypeVar)]
 getFrees = mapM $ \(SFL.Ident name) -> do
@@ -28,9 +31,7 @@ getFrees = mapM $ \(SFL.Ident name) -> do
 
 addTypeConstr :: String -> [SFL.Ident] -> SFL.TC -> Tc (Env -> Env)
 addTypeConstr tName params typeConstr = do
-    let constrName = case typeConstr of
-            SFL.TConstrS (SFL.UIdent name) -> name
-            SFL.TConstr (SFL.UIdent name) _ -> name
+    let constrName = getTCName typeConstr
     constrNameFree <- asks (M.notMember constrName . typeConstrs)
     if constrNameFree
         then do
@@ -55,6 +56,9 @@ addTypeConstr tName params typeConstr = do
   where
     varsFromFrees = map $ \(_, tv) -> TypeVar tv
 
+getTCName :: SFL.TC -> String
+getTCName (SFL.TConstrS (SFL.UIdent name)) = name
+getTCName (SFL.TConstr (SFL.UIdent name) _) = name
 
 resolveTC :: [(String, TypeVar)] -> SFL.TC -> Tc Type
 resolveTC frees = \case

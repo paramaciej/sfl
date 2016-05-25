@@ -15,6 +15,7 @@ data TypeException
     | TypeArgsNumber String Int Int
     | TypeDeclared String
     | ConstrDeclared String
+    | DuplicatedConstructors
 
 data MismatchError = MismatchError String String (Maybe MismatchError)
 
@@ -41,6 +42,7 @@ instance Show TypeException where
             "(" ++ show wrongNumber ++ " was given)."
         TypeDeclared tName -> "The type '" ++ tName ++ "' has been already declared."
         ConstrDeclared cName -> "The type constructor '" ++ cName ++ "' has been already declared."
+        DuplicatedConstructors -> "Trying to declare type with duplicated names of constructors!"
 
 
 

@@ -50,8 +50,8 @@ fromFile filename = do
 
 userLines :: PrSt ()
 userLines = do
-        liftIO $ putStr "> "
-        line <- liftIO getLine
+        liftIO $ putStr "> " >> hFlush stdout
+        line <- liftIO $ getLine
         case line of
             ":v" -> do
                 showValues
