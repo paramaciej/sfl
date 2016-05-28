@@ -53,8 +53,8 @@ infer (EIf cond eTrue eFalse) =
 infer (EMatch e cases) = do
     t <- infer e
     let aux (patExp, caseBody) = do
-        mods <- inferPatExp patExp t
-        local mods $ infer caseBody
+            mods <- inferPatExp patExp t
+            local mods $ infer caseBody
 
     modifiers <- mapM aux cases
     case modifiers of

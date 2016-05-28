@@ -68,8 +68,8 @@ showValues = do
     st <- get
     let combined = intersectionWith (,) (values st) (schemeMap $ types st)
     let aux (name, (v, t)) = do
-        tStr <- showScheme t
-        liftIO $ putStrLn $ name ++ " \t= " ++ show v ++ " : " ++ tStr
+            tStr <- showScheme t
+            liftIO $ putStrLn $ name ++ " \t= " ++ show v ++ " : " ++ tStr
     liftIO $ runReaderT (runExceptT (mapM_ aux $ assocs combined)) (types st) >>= either (fail .show) return
 
 
