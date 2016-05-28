@@ -2,7 +2,7 @@ all:
 	bnfc SFL.cf
 	happy -gca ParSFL.y
 	alex -g LexSFL.x
-	ghc --make TestSFL.hs -o TestSFL
+#	ghc --make TestSFL.hs -o TestSFL
 	ghc --make Interpreter/Main.hs -o interpreter
 
 clean:

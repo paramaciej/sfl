@@ -3,6 +3,7 @@
 
 module TypeChecker.FTV where
 
+import Control.Applicative
 import TypeChecker.Types
 import Control.Monad.Reader
 import Data.IORef

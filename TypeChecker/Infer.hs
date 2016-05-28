@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module TypeChecker.Infer where
 
+import Control.Applicative
 import qualified AbsSFL as SFL
 import TypeChecker.Types
 import TypeChecker.HMUtils

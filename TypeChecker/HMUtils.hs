@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module TypeChecker.HMUtils where
 
+import Control.Applicative
 import Control.Monad.Reader
 import Data.IORef
 import Data.Maybe
