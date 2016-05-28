@@ -59,10 +59,6 @@ infer (EMatch e cases) = do
     modifiers <- mapM aux cases
     case modifiers of
         (m:ms) -> do
-            ss <- showType m
-            sss <- mapM showType ms
-
-            liftIO $ putStrLn $ ss ++ "vs.\n\t" ++ show sss
             mapM_ (catchMatchInfer . unify m) ms
             return m
         [] -> throwError EmptyMatchError
@@ -111,7 +107,7 @@ inferPatExp patExp ttt = do
                     let constrTypeName = typeName constr
                     cType <- getUserType constrTypeName
                     unify cType zonked
-                    case zonked of
+                    liftIO (zonk zonked) >>= \case
                         TypeConstr n args -> if n == constrTypeName
                             then do
                                 zs <- zipWithM inferPatExp pats args
