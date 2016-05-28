@@ -12,6 +12,7 @@ data TypeError
     | DifferentCaseTypesError TypeError
     | PatternMatchingError String String TypeError
     | ConstructorArgsNumber String Int Int
+    | ConstructorsMismatch String String
     | TypeArgsNumber String Int Int
     | TypeDeclared String
     | ConstrDeclared String
@@ -37,6 +38,7 @@ instance Show TypeError where
         ConstructorArgsNumber constrName rightNumber wrongNumber ->
             "Type constructor '" ++ constrName ++ "' requires " ++ show rightNumber ++ " arguments " ++
             "(" ++ show wrongNumber ++ " was given)."
+        ConstructorsMismatch fstName sndName -> "Type constructors mismatch: " ++ fstName ++ " and " ++ sndName ++ "."
         TypeArgsNumber tName rightNumber wrongNumber ->
             "Type '" ++ tName ++ "' requires " ++ show rightNumber ++ " parameters " ++
             "(" ++ show wrongNumber ++ " was given)."

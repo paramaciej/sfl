@@ -32,8 +32,11 @@ eval = \case
         return $ VFun (\xx -> local (M.insert name xx . const env) $ eval body)
     ELet patExp e body -> do
         val <- eval e
-        modifications <- patEval patExp val
-        local modifications $ eval body
+        if patEquals patExp val
+            then do
+                modifications <- patEval patExp val
+                local modifications $ eval body
+            else throwError $ LetPatternMismatch $ show val
     ELetRec name e body -> do
         rec val <- local (M.insert name val) $ eval e
         local (M.insert name val) $ eval body

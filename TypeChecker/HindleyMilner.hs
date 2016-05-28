@@ -105,17 +105,18 @@ inferPatExp patExp ttt = do
             ts <- generalize zonked
             return  $ envInsert name ts
         SFL.PEPat (SFL.PatTConstr (SFL.UIdent name) pats) -> do
-            -- TODO jakieś unify??
             constructor <- asks (M.lookup name . typeConstrs)
             case constructor of
                 Just constr -> do
-                    let xname = typeName constr
+                    let constrTypeName = typeName constr
+                    cType <- getUserType constrTypeName
+                    unify cType zonked
                     case zonked of
-                        TypeConstr n args -> if n == xname
+                        TypeConstr n args -> if n == constrTypeName
                             then do
                                 zs <- zipWithM inferPatExp pats args
                                 return $ foldr (.) id zs
-                            else error $ "constructor names mismatch! : " ++ n ++ " / " ++ xname -- TODO throwError?
+                            else throwError $ ConstructorsMismatch n constrTypeName
                         _ -> error "wrong type constructor"
                 Nothing -> throwError $ UndefinedError name
 

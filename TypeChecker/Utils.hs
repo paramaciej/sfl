@@ -1,7 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 module TypeChecker.Utils where
 
+import Control.Monad.Except
 import Control.Monad.Reader
+import Exceptions.TypeErrors
 import Data.IORef
 import Data.Maybe
 import Data.List
@@ -57,3 +59,14 @@ tApp arg ret = TypeConstr "->" [arg, ret]
 
 mulTApp :: [Type] -> Type -> Type
 mulTApp args ret = foldr tApp ret args
+
+getUserType :: String -> Tc Type
+getUserType name = do
+    argsCount <- asks (M.lookup name . typeDefs)
+    case argsCount of
+        Just count -> do
+            frees <- forM [1..count] (\_ -> do
+                f <- fresh
+                return $ TypeVar f)
+            return $ TypeConstr name frees
+        Nothing -> throwError $ UndefinedError name
