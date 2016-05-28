@@ -1,20 +1,14 @@
 import AbsSFL as SFL
-import LexSFL
 import ParSFL
 import ErrM
-import TypeChecker.HindleyMilner
-import TypeChecker.Infer
-import TypeChecker.HMUtils
 import TypeChecker.Types
-import Interpreter.Evaluator
 import Control.Monad.State
-import Control.Monad.Reader
 import StdLib.Operators
 import Data.Map
 import Interpreter.Types
 import Interpreter.Utils
 import System.Environment
-
+import System.IO
 
 main :: IO ()
 main = do
@@ -40,7 +34,7 @@ fromFile filename = do
 
 userLines :: PrSt ()
 userLines = do
-        liftIO $ putStr "> "
+        liftIO $ putStr "> " >> hFlush stdout
         line <- liftIO $ getLine
         case line of
             ":v" -> do

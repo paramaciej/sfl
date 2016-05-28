@@ -1,0 +1,12 @@
+val a = [1, 2, 3, 4];
+
+let x:_ = a in 5 : [x];
+
+def append n a xs = if n == 0 
+    then xs
+    else append (n-1) a (a:xs);
+
+
+append 5 True [False];
+
+append 8 False [True, True];
