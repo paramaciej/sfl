@@ -43,7 +43,8 @@ patEval patExp val = case patExp of
                 then do
                     evs <- mapM (\(p, v) -> patEval p v) (zip patExps vals)
                     return $ foldr (.) id evs
-                else throwError $ ListPatternLengthMismatch (length patExps) (length vals)
+                else error $ "wrong list length (pattern's: " ++  show (length patExps) ++ ", value's: " ++
+                    show (length vals) ++ ")."
             _ -> error $ "wrong value for list: " ++ show val
     PEPat (PatInt _) -> return id
 
