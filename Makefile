@@ -1,8 +1,18 @@
-all: bnfc 
-	stack build
+all: interpreter
 
-bnfc:
-	bnfc SFL.cf
+stack:
+	wget -O stack.tar.gz https://www.stackage.org/stack/linux-x86_64
+	tar xvvf stack.tar.gz
+	rm -r stack-local
+	mv stack-1* stack-local
+	SYSTEM_CERTIFICATE_PATH=/etc/openssl/certs ./stack-local/stack setup
+
+interpreter: bnfc
+	SYSTEM_CERTIFICATE_PATH=/etc/openssl/certs ./stack-local/stack install --local-bin-path=$(shell pwd)
+
+bnfc: stack
+	SYSTEM_CERTIFICATE_PATH=/etc/openssl/certs ./stack-local/stack install BNFC
+	SYSTEM_CERTIFICATE_PATH=/etc/openssl/certs ./stack-local/stack exec bnfc SFL.cf
 
 clean:
 	-rm -f *.log *.aux *.hi *.o *.dvi
