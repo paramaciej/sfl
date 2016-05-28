@@ -7,6 +7,9 @@ all:
 
 clean:
 	-rm -f *.log *.aux *.hi *.o *.dvi
+	-rm Interpreter/*.hi Interpreter/*.o
+	-rm StdLib/*.hi StdLib/*.o
+	-rm TypeChecker/*.hi TypeChecker/*.o
 
 distclean: clean
 	-rm -f DocSFL.* LexSFL.* ParSFL.* LayoutSFL.* SkelSFL.* PrintSFL.* TestSFL.* AbsSFL.* TestSFL ErrM.* SharedString.* ComposOp.* SFL.dtd XMLSFL.* interpreter
