@@ -29,7 +29,8 @@ typeStr e = do
 evaluatedExp :: SFL.Exp -> PrSt Value
 evaluatedExp e = do
     env <- gets values
-    liftIO (runReaderT (runExceptT (eval (tcExp e))) env) >>= either throwError return
+    let evalError x = show x ++ "\nin expression:\n" ++ printTree e
+    liftIO (runReaderT (runExceptT (eval (tcExp e))) env) >>= either (throwError . evalError) return
 
 showExp :: SFL.Exp -> PrSt String
 showExp e = do

@@ -3,7 +3,7 @@ module TypeChecker.Types where
 import Data.IORef
 import Control.Monad.Reader
 import Control.Monad.Except
-import Exceptions.Types
+import Exceptions.TypeErrors
 import Interpreter.Show
 import System.Console.ANSI
 import qualified Data.Map as M
@@ -29,7 +29,7 @@ data Env = Env {
 
 data TCEntry = TCEntry { typeName :: String, constrType :: TypeScheme}
 
-type Tc = ExceptT TypeException (ReaderT Env IO)
+type Tc = ExceptT TypeError (ReaderT Env IO)
 
 data Exp
     = EVar String

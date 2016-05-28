@@ -3,10 +3,10 @@ module Exceptions.Utils where
 import TypeChecker.Types
 import TypeChecker.Show
 import Control.Monad.Except
-import Exceptions.Types
+import Exceptions.TypeErrors
 import AbsSFL
 
-raiseMismatchError :: Type -> Type -> Maybe TypeException -> Tc ()
+raiseMismatchError :: Type -> Type -> Maybe TypeError -> Tc ()
 raiseMismatchError t t' mTerr = do
     name <- showType t
     name' <- showType t'
@@ -32,13 +32,13 @@ catchAppInfer unify funT argT =
 catchIfInfer :: Tc Type -> Tc Type
 catchIfInfer ifInfer =
     catchError ifInfer handle where
-        handle :: TypeException -> Tc Type
+        handle :: TypeError -> Tc Type
         handle err = throwError $ InferError "Type error in if expression." err
 
 catchMatchInfer :: Tc () -> Tc ()
 catchMatchInfer unify =
     catchError unify handle where
-        handle :: TypeException -> Tc ()
+        handle :: TypeError -> Tc ()
         handle err = throwError $ DifferentCaseTypesError err
 
 catchPatternMatch :: Tc () -> PatExp -> Type -> Tc ()

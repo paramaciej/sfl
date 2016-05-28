@@ -7,6 +7,7 @@ import Data.Map
 import Control.Monad.Reader
 import Control.Monad.Except
 import Control.Monad.State
+import Exceptions.EvalErrors
 import TypeChecker.Types
 import System.Console.ANSI
 import Interpreter.Show
@@ -24,7 +25,7 @@ data Value
     | VConstr String [Value]
 
 type ValEnv = Map String Value
-type VE = ExceptT String (ReaderT ValEnv IO)
+type VE = ExceptT EvalError (ReaderT ValEnv IO)
 
 curryV :: ((Value, Value) -> VE Value) -> Value
 curryV fun = VFun (return . VFun . curry fun)

@@ -1,16 +1,16 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Exceptions.Types where
+module Exceptions.TypeErrors where
 
-data TypeException
+data TypeError
     = TypeMismatchError MismatchError
     | OccursCheckError String String
-    | ApplicationTypeError String String TypeException
-    | InferError String TypeException
+    | ApplicationTypeError String String TypeError
+    | InferError String TypeError
     | UndefinedError String
     | EmptyMatchError
-    | DifferentCaseTypesError TypeException
-    | PatternMatchingError String String TypeException
+    | DifferentCaseTypesError TypeError
+    | PatternMatchingError String String TypeError
     | ConstructorArgsNumber String Int Int
     | TypeArgsNumber String Int Int
     | TypeDeclared String
@@ -20,7 +20,7 @@ data TypeException
 data MismatchError = MismatchError String String (Maybe MismatchError)
 
 
-instance Show TypeException where
+instance Show TypeError where
     show = \case
         TypeMismatchError me -> "Type mismatch: " ++ show me
         OccursCheckError tv t -> "Occurs check failed: " ++ tv ++ " occurs in " ++ t ++ "."

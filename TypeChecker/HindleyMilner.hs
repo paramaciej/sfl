@@ -7,9 +7,10 @@ import Control.Monad.Reader
 import qualified Data.Map as M
 import qualified AbsSFL as SFL
 import TypeChecker.Types
+import TypeChecker.Show
 import TypeChecker.Utils
 import Control.Monad.Except
-import Exceptions.Types
+import Exceptions.TypeErrors
 import Exceptions.Utils
 
 infer :: Exp -> Tc Type
@@ -58,6 +59,10 @@ infer (EMatch e cases) = do
     modifiers <- mapM aux cases
     case modifiers of
         (m:ms) -> do
+            ss <- showType m
+            sss <- mapM showType ms
+
+            liftIO $ putStrLn $ ss ++ "vs.\n\t" ++ show sss
             mapM_ (catchMatchInfer . unify m) ms
             return m
         [] -> throwError EmptyMatchError
@@ -112,7 +117,7 @@ inferPatExp patExp ttt = do
                                 return $ foldr (.) id zs
                             else error $ "constructor names mismatch! : " ++ n ++ " / " ++ xname -- TODO throwError?
                         _ -> error "wrong type constructor"
-                Nothing -> error "unknown" -- FIXME
+                Nothing -> throwError $ UndefinedError name
 
         SFL.PEPat SFL.PatWild -> return id
         SFL.PEPat SFL.PatTrue -> unify tBool zonked >> return id
@@ -148,8 +153,9 @@ unifyVar tv@(TV _ ioref) t reversed = liftIO (readIORef ioref) >>= \case
             else unify context t
         Nothing -> do
             zonked <- liftIO $ zonk t
-            if occursCheck tv zonked then
-                raiseOccursCheckError tv zonked
+            if occursCheck tv zonked then case zonked of
+                TypeVar _ -> return () -- type is the same typevar -- it's already unified.
+                _ -> raiseOccursCheckError tv zonked
             else
                 liftIO $ writeIORef ioref (Just zonked)
 

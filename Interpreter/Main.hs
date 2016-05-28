@@ -103,5 +103,3 @@ handleStmt = \case
                 val <- evaluatedExp e
                 put $ PrEnv (envInsert name ts typSt) (insert name val valSt)
                 printExp e
-
-

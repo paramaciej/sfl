@@ -10,6 +10,7 @@ import Interpreter.Types
 import Interpreter.PatEval
 import qualified AbsSFL as SFL
 import Control.Monad.Except
+import Exceptions.EvalErrors
 
 
 eval :: Exp -> VE Value
@@ -45,7 +46,7 @@ eval = \case
             VBool False -> eval eFalse
             _ -> error "conditional doesn't evaluate to Bool!"
     EMatch e cases -> do
-        val <- eval e -- TODO skończyć to
+        val <- eval e
         evalPatchMatch cases val
     EConstr name -> do
         m <- ask
@@ -62,6 +63,5 @@ evalPatchMatch ((patExp, body):mcases) val = if patEquals patExp val
         then do
             modifications <- patEval patExp val
             local modifications $ eval body
---            return modifications -- TODO
         else evalPatchMatch mcases val
-evalPatchMatch [] _ = error "NO LOL!" -- TODO
+evalPatchMatch [] _ = throwError NonExhaustivePatterns

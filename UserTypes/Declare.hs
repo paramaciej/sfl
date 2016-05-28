@@ -7,7 +7,7 @@ import qualified Data.Map as M
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.List
-import Exceptions.Types
+import Exceptions.TypeErrors
 import TypeChecker.Types
 import TypeChecker.Utils
 
