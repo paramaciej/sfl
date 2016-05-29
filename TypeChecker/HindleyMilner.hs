@@ -7,11 +7,11 @@ import Control.Monad.Reader
 import qualified Data.Map as M
 import qualified AbsSFL as SFL
 import TypeChecker.Types
-import TypeChecker.Show
 import TypeChecker.Utils
 import Control.Monad.Except
 import Exceptions.TypeErrors
 import Exceptions.Utils
+import TypeChecker.Show
 
 infer :: Exp -> Tc Type
 infer (EVar x) = do
@@ -59,10 +59,6 @@ infer (EMatch e cases) = do
     modifiers <- mapM aux cases
     case modifiers of
         (m:ms) -> do
-            ss <- showType m
-            sss <- mapM showType ms
-
-            liftIO $ putStrLn $ ss ++ "vs.\n\t" ++ show sss
             mapM_ (catchMatchInfer . unify m) ms
             return m
         [] -> throwError EmptyMatchError
@@ -111,10 +107,10 @@ inferPatExp patExp ttt = do
                     let constrTypeName = typeName constr
                     cType <- getUserType constrTypeName
                     unify cType zonked
-                    case zonked of
-                        TypeConstr n args -> if n == constrTypeName
+                    liftIO (zonk zonked) >>= \case
+                        rType@(TypeConstr n args) -> if n == constrTypeName
                             then do
-                                zs <- zipWithM inferPatExp pats args
+                                zs <- getTCEntryArgsTypes constr rType >>= zipWithM inferPatExp pats
                                 return $ foldr (.) id zs
                             else throwError $ ConstructorsMismatch n constrTypeName
                         _ -> error "wrong type constructor"
@@ -170,3 +166,19 @@ letRecEnvModifier name e = do
     recMod = do
         fr <- fresh
         return $ envInsert name (Forall [] $ TypeVar fr)
+
+
+getTCEntryArgsTypes :: TCEntry -> Type -> Tc [Type]
+getTCEntryArgsTypes tcEntry resultType = do
+    cType <- instantiate cTypeScheme
+    cResultType <- getConstrResultType cType
+    unify cResultType resultType
+    return $ getArgsTypes cType
+  where
+    cTypeScheme = constrType tcEntry
+    getConstrResultType = \case
+        TypeConstr "->" [_, res] -> getConstrResultType res
+        res -> return res
+    getArgsTypes = \case
+        TypeConstr "->" [arg, res] -> arg : getArgsTypes res
+        _ -> []

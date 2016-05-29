@@ -1,0 +1,5 @@
+(x => not x) 40;
+
+def fun x = x + y;
+
+

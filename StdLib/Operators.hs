@@ -1,10 +1,12 @@
 module StdLib.Operators where
 
+import Control.Monad.Except
+import Control.Monad.Reader
+import Data.Map
+import Exceptions.EvalErrors
+import Interpreter.Types
 import TypeChecker.Types
 import TypeChecker.Utils
-import Interpreter.Types
-import Data.Map
-import Control.Monad.Reader
 
 
 ops :: Tc Env
@@ -48,8 +50,8 @@ eee = fromList [
     ("add", funIntIntInt (+)),
     ("sub", funIntIntInt (-)),
     ("mul", funIntIntInt (*)),
-    ("div", funIntIntInt div),
-    ("mod", funIntIntInt mod),
+    ("div", funFailOnZero div),
+    ("mod", funFailOnZero mod),
 
     ("_and", curryV (\(VBool a, VBool b) -> return $ VBool (a && b))),
     ("_or", curryV (\(VBool a, VBool b) -> return $ VBool (a || b))),
@@ -68,6 +70,10 @@ eee = fromList [
   where
     funIntIntInt fun = curryV (\(VInt a, VInt b) -> return $ VInt (fun a b))
     funIntIntBool fun = curryV (\(VInt a, VInt b) -> return $ VBool (fun a b))
+
+    funFailOnZero fun = curryV (\(VInt a, VInt b) -> if b == 0
+        then throwError ZeroDivisionError
+        else return $ VInt (fun a b))
 
 
 
