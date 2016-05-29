@@ -3,33 +3,35 @@
 module TypeChecker.HindleyMilner where
 
 import Data.IORef
-import Data.List
 import Control.Monad.Reader
 import qualified Data.Map as M
 import qualified AbsSFL as SFL
 import TypeChecker.Types
-import TypeChecker.FTV
-import TypeChecker.HMUtils
+import TypeChecker.Utils
+import Control.Monad.Except
+import Exceptions.TypeErrors
+import Exceptions.Utils
+import TypeChecker.Show
 
 infer :: Exp -> Tc Type
 infer (EVar x) = do
-    mts <- asks $ M.lookup x
+    mts <- asks $ M.lookup x . schemeMap
     case mts of
         Just ts -> instantiate ts
-        Nothing -> error $ "'" ++ x ++ "' undefined." -- FIXME
+        Nothing -> throwError $ UndefinedError x
 
 infer (EApp e1 e2) = do
     t1 <- infer e1
     t2 <- infer e2
     b <- fresh
     let tb = TypeVar b
-    unify t1 (TypeConstr "->" [t2, tb])
+    catchAppInfer (unify t1 (TypeConstr "->" [t2, tb])) t1 t2
     return tb
 
 infer (ELam x e) = do
     b <- fresh
     let tb = TypeVar b
-    t <- local (M.insert x (Forall [] tb)) $ infer e
+    t <- local (envInsert x (Forall [] tb)) $ infer e
     return $ TypeConstr "->" [tb, t]
 
 infer (ELet patExp e body) = do
@@ -41,110 +43,142 @@ infer (ELetRec name e body) = do
     modifier <- letRecEnvModifier name e
     local modifier $ infer body
 
-
 infer (EInt _) = return tInt
 
 infer (EBool _) = return tBool
 
-infer (EIf cond eTrue eFalse) = infer (mulEApp (EVar "_infer_if") [cond, eTrue, eFalse])
+infer (EIf cond eTrue eFalse) =
+    catchIfInfer (infer (mulEApp (EVar "_infer_if") [cond, eTrue, eFalse]))
 
 infer (EMatch e cases) = do
     t <- infer e
-    let aaa = \(patExp, caseBody) -> do
-        mods <- inferPatExp patExp t
-        local mods $ infer caseBody
+    let aux (patExp, caseBody) = do
+            mods <- inferPatExp patExp t
+            local mods $ infer caseBody
 
-    modifiers <- mapM aaa cases
+    modifiers <- mapM aux cases
     case modifiers of
         (m:ms) -> do
-            mapM_ (unify m) ms
+            mapM_ (catchMatchInfer . unify m) ms
             return m
-        [] -> error "no cases in match!" -- FIXME
+        [] -> throwError EmptyMatchError
 
-infer (EConstr name es) = do
-    x <- mapM infer es
-    return $ TypeConstr name x
+infer (EConstr name) = do
+    constructor <- asks (M.lookup name . typeConstrs)
+    case constructor of
+        Just constr -> instantiate $ constrType constr
+        Nothing -> throwError $ UndefinedError $ "constructor: " ++ name
+
+infer (ETuple es) = do
+    ts <- mapM infer es
+    return $ TypeConstr "tuple" ts
 
 
 inferPatExp :: SFL.PatExp -> Type -> Tc (Env -> Env)
 inferPatExp patExp ttt = do
     zonked <- liftIO $ zonk ttt
     case patExp of
-        SFL.PETuple pe1 pe2 -> case zonked of
-            TypeConstr "tuple" [t1, t2] -> do
-                z1 <- inferPatExp pe1 t1
-                z2 <- inferPatExp pe2 t2
-                return (z1 . z2)
-            _ -> error "wrong tuple matching" -- FIXME
+        SFL.PETuple pe1 pe2 -> do
+            free1 <- fresh
+            free2 <- fresh
+            catchPatternMatch (unify (TypeConstr "tuple" [TypeVar free1, TypeVar free2]) zonked) patExp zonked
+            liftIO (zonk zonked) >>= \case
+                TypeConstr "tuple" [t1, t2] -> do
+                    z1 <- inferPatExp pe1 t1
+                    z2 <- inferPatExp pe2 t2
+                    return (z1 . z2)
+                _ -> error "wrong tuple matching"
         SFL.PECons pe1 pe2 -> do
-            liftIO $ putStrLn $ "no elo: " ++ show pe1 ++ "/" ++ show pe2
-            xx <- liftIO $ showType zonked
-            liftIO $ putStrLn $ "typ: " ++ xx
-            case zonked of
+            free<- fresh
+            catchPatternMatch (unify (TypeConstr "list" [TypeVar free]) zonked) patExp zonked
+            liftIO (zonk zonked) >>= \case
                 TypeConstr "list" [lt] -> do
                     z1 <- inferPatExp pe1 lt
                     z2 <- inferPatExp pe2 $ TypeConstr "list" [lt]
                     return (z1 . z2)
-                _ -> error "wrong cons matching" -- FIXME
+                _ -> error "wrong cons matching"
         SFL.PEPat (SFL.PatVar (SFL.Ident name)) -> do
             ts <- generalize zonked
-            return (M.insert name ts)
+            return  $ envInsert name ts
         SFL.PEPat (SFL.PatTConstr (SFL.UIdent name) pats) -> do
-            case zonked of
-                TypeConstr n args -> if n == name
-                    then do
-                        zs <- mapM (\(p, a) -> inferPatExp p a) (zip pats args)
-                        let composed = comp zs where
-                            comp [] = id
-                            comp (h:t) = h . (comp t)
-                        return  composed
-                    else error "constructor names mismatch!" -- FIXME
-                _ -> error "wrong type constr."
-        SFL.PEPat SFL.PatWild -> return id
-        SFL.PEPat SFL.PatTrue -> return id
-        SFL.PEPat SFL.PatFalse -> return id
-        SFL.PEPat (SFL.PatInt _) -> return id
+            constructor <- asks (M.lookup name . typeConstrs)
+            case constructor of
+                Just constr -> do
+                    let constrTypeName = typeName constr
+                    cType <- getUserType constrTypeName
+                    unify cType zonked
+                    liftIO (zonk zonked) >>= \case
+                        rType@(TypeConstr n args) -> if n == constrTypeName
+                            then do
+                                zs <- getTCEntryArgsTypes constr rType >>= zipWithM inferPatExp pats
+                                return $ foldr (.) id zs
+                            else throwError $ ConstructorsMismatch n constrTypeName
+                        _ -> error "wrong type constructor"
+                Nothing -> throwError $ UndefinedError name
 
+        SFL.PEPat SFL.PatWild -> return id
+        SFL.PEPat SFL.PatTrue -> unify tBool zonked >> return id
+        SFL.PEPat SFL.PatFalse -> unify tBool zonked >> return id
+        SFL.PEPat (SFL.PatInt _) -> unify tInt zonked >> return id
+        SFL.PEPat (SFL.PatList elems) -> do
+                free <- fresh
+                catchPatternMatch (unify (TypeConstr "list" [TypeVar free]) zonked) patExp zonked
+                liftIO (zonk zonked) >>= \case
+                    TypeConstr "list" [lt] -> do
+                        let patExps = map (\(SFL.PatLElem p) -> p) elems
+                        zs <- mapM (`inferPatExp` lt) patExps
+                        return $ foldr (.) id zs
+                    _ -> error "wrong list matching"
 
 instantiate :: TypeScheme -> Tc Type
 instantiate (Forall tvs t) = do
     tvs' <- mapM (const fresh) tvs
     let subst = zip tvs tvs'
-    return $ applySubstr subst t
-
-generalize :: Type -> Tc TypeScheme
-generalize t = do
-    fv <- ftv t
-    m <- ask
-    fvenv <- ftv $ M.elems m
-    return $ Forall (fv \\ fvenv) t
-
+    liftIO $ liftM (applySubstr subst) (zonk t)
 
 unify :: Type -> Type -> Tc ()
-unify (TypeVar tv) t' = unifyVar tv t'
-unify t (TypeVar tv') = unifyVar tv' t
-unify (TypeConstr name args) (TypeConstr name' args')
-    | name == name' = zipWithM_ unify args args'
-    | otherwise = fail $ "Type mismatch: " ++ name ++ " vs. " ++ name'
+unify (TypeVar tv) t' = unifyVar tv t' False
+unify t (TypeVar tv') = unifyVar tv' t True
+unify t@(TypeConstr name args) t'@(TypeConstr name' args')
+    | name == name' = catchError (zipWithM_ unify args args') (raiseMismatchError t t' . Just)
+    | otherwise = raiseMismatchError t t' Nothing
 
-unifyVar :: TypeVar -> Type -> Tc ()
-unifyVar ioref t = liftIO (readIORef ioref) >>= \case
-        Just context -> unify context t
+unifyVar :: TypeVar -> Type -> Bool -> Tc ()
+unifyVar tv@(TV _ ioref) t reversed = liftIO (readIORef ioref) >>= \case
+        Just context -> if reversed
+            then unify t context
+            else unify context t
         Nothing -> do
             zonked <- liftIO $ zonk t
-            if occursCheck ioref zonked then
-                fail "occurs check failed <corner!?>"
+            if occursCheck tv zonked then case zonked of
+                TypeVar _ -> return () -- type is the same typevar -- it's already unified.
+                _ -> raiseOccursCheckError tv zonked
             else
                 liftIO $ writeIORef ioref (Just zonked)
-
 
 letRecEnvModifier :: String -> Exp -> Tc (Env -> Env)
 letRecEnvModifier name e = do
     rm <- recMod
     t <- local rm $ infer e
     ts <- generalize t
-    return $ M.insert name ts
+    return $ envInsert name ts
   where
     recMod = do
         fr <- fresh
-        return (M.insert name (Forall [] $ TypeVar fr))
+        return $ envInsert name (Forall [] $ TypeVar fr)
+
+
+getTCEntryArgsTypes :: TCEntry -> Type -> Tc [Type]
+getTCEntryArgsTypes tcEntry resultType = do
+    cType <- instantiate cTypeScheme
+    cResultType <- getConstrResultType cType
+    unify cResultType resultType
+    return $ getArgsTypes cType
+  where
+    cTypeScheme = constrType tcEntry
+    getConstrResultType = \case
+        TypeConstr "->" [_, res] -> getConstrResultType res
+        res -> return res
+    getArgsTypes = \case
+        TypeConstr "->" [arg, res] -> arg : getArgsTypes res
+        _ -> []

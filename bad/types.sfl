@@ -1,2 +1,15 @@
+def fun x = x + 5;
 
-True + 3
+fun True;
+
+5 + fun;
+
+42 + True;
+
+[3] + [1, 2];
+
+42 : 42;
+
+1 : [True];
+
+[1, 2, 3, False, 5];

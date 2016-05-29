@@ -1,6 +1,6 @@
-add;
+add; # operators have corresponding functions
 
-add 5;
+add 5; # partial application
 
 let x = add 4 in x 6;
 

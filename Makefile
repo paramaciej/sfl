@@ -1,17 +1,23 @@
-all:
-	bnfc SFL.cf
-	happy -gca ParSFL.y
-	alex -g LexSFL.x
-#	ghc --make TestSFL.hs -o TestSFL
-	ghc --make Interpreter/Main.hs -o interpreter
+all: interpreter
+
+stack:
+	wget -O stack.tar.gz https://www.stackage.org/stack/linux-x86_64
+	tar xf stack.tar.gz
+	rm -rf stack-local
+	mv stack-1* stack-local
+	SYSTEM_CERTIFICATE_PATH=/etc/openssl/certs ./stack-local/stack setup
+
+interpreter: bnfc
+	SYSTEM_CERTIFICATE_PATH=/etc/openssl/certs ./stack-local/stack install --local-bin-path=$(shell pwd)
+
+bnfc: stack
+	SYSTEM_CERTIFICATE_PATH=/etc/openssl/certs ./stack-local/stack install BNFC
+	SYSTEM_CERTIFICATE_PATH=/etc/openssl/certs ./stack-local/stack exec bnfc SFL.cf
 
 clean:
 	-rm -f *.log *.aux *.hi *.o *.dvi
-	-rm Interpreter/*.hi Interpreter/*.o
-	-rm StdLib/*.hi StdLib/*.o
-	-rm TypeChecker/*.hi TypeChecker/*.o
 
 distclean: clean
-	-rm -f DocSFL.* LexSFL.* ParSFL.* LayoutSFL.* SkelSFL.* PrintSFL.* TestSFL.* AbsSFL.* TestSFL ErrM.* SharedString.* ComposOp.* SFL.dtd XMLSFL.* interpreter
+	-rm -f DocSFL.* LexSFL.* ParSFL.* LayoutSFL.* SkelSFL.* PrintSFL.* TestSFL.* AbsSFL.* TestSFL ErrM.* SharedString.* ComposOp.* SFL.dtd XMLSFL.*
 	
 

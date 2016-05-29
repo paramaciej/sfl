@@ -1,0 +1,41 @@
+name: interpreter
+version: 2.0.0.0
+author: Maciej Kacprzak
+maintainer: mk346922@students.mimuw.edu.pl
+category: Language
+build-type: Simple
+cabal-version: >=1.10
+
+executable interpreter
+    main-is: Interpreter/Main.hs
+    build-depends: 
+        base >=4.8 && <5.0,
+        mtl,
+        array,
+        containers,
+        ansi-terminal
+    other-modules: 
+        AbsSFL
+        ErrM
+        Exceptions.EvalErrors
+        Exceptions.TypeErrors
+        Exceptions.Utils
+        Interpreter.Evaluator
+        Interpreter.PatEval
+        Interpreter.Show
+        Interpreter.Types
+        Interpreter.Utils
+        LexSFL
+        ParSFL
+        PrintSFL
+        StdLib.Operators
+        TypeChecker.FTV
+        TypeChecker.HindleyMilner
+        TypeChecker.Infer
+        TypeChecker.Show
+        TypeChecker.Types
+        TypeChecker.Utils
+        UserTypes.Declare
+        UserTypes.Vals
+
+    default-language: Haskell2010

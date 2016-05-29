@@ -2,11 +2,50 @@ val a = [1, 2, 3, 4];
 
 let x:_ = a in 5 : [x];
 
-def append n a xs = if n == 0 
-    then xs
-    else append (n-1) a (a:xs);
-
+def append n a xs = match n {
+    case 0 => xs;
+    case _ => append (n-1) a (a:xs)
+};
 
 append 5 True [False];
+append 3 42 [78, 13];
 
-append 8 False [True, True];
+def rev_aux xs acc = match xs {
+    case [] => acc;
+    case h:t => rev_aux t (h:acc)
+};
+
+def reverse xs = rev_aux xs [];
+
+reverse [1,2,3,4,5];
+reverse [5];
+reverse [];
+
+
+
+def head x = { case h:_ => h };
+def tail x = { case _:t => t };
+
+def map fun list = match list {
+    case [] => [];
+    case h:t => fun h : map fun t
+};
+
+def filter fun list = match list {
+    case [] => [];
+    case h:t => if (fun h)
+        then h : filter fun t
+        else filter fun t
+};
+
+def range begin end = if begin > end
+    then []
+    else begin : range (begin+1) end;
+
+
+map (x => x + 5) [1, 10, 100];
+map (x => x, 5 <= x and x <= 9) [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+filter (x => x % 2 == 0) (range 1 30);
+filter (x => not x) [True, False, False, True, True];
+

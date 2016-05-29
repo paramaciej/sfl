@@ -13,7 +13,7 @@ class HasFTV a where
     ftv :: a -> Tc [TypeVar]
 
 instance HasFTV TypeVar where
-    ftv tv = liftIO (readIORef tv) >>= maybe (return [tv]) ftv
+    ftv tv@(TV _ ioref) = liftIO (readIORef ioref) >>= maybe (return [tv]) ftv
 
 instance HasFTV Type where
     ftv (TypeVar var) = ftv var

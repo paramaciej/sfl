@@ -3,9 +3,14 @@ token UIdent (upper (letter | digit | '_')*);
 Prog.       Program ::= [Stmt];
 ExpStmt.    Stmt ::= Exp;
 
-TypeConstr. TC ::= UIdent [Ident] ;
+TConstr.    TC ::= UIdent [TCArg];
+TConstrS.   TC1 ::= UIdent;
+TCAIdent.   TCArg ::= Ident;
+TCAArg.     TCArg ::= TC1;
 TypeDecl.   Stmt ::= "type" UIdent [Ident] "=" [TC];
-separator nonempty TC "|";
+coercions  TC 1;
+separator   nonempty TC "|";
+terminator  nonempty TCArg "";
 
 
 
@@ -28,19 +33,23 @@ ELetRec.    Exp ::= "let" "rec" Ident "=" Exp "in" Exp;
 PatInt.     Pat ::= Integer;
 PatTrue.    Pat ::= "True";
 PatFalse.   Pat ::= "False";
+PatList.    Pat ::= "[" [PLEl] "]";
 PatVar.     Pat ::= Ident;
 PatTConstr. Pat ::= UIdent [PatExp];
 PatWild.    Pat ::= "_";
 
 PETuple.    PatExp ::= PatExp "," PatExp1;
-PECons.     PatExp1 ::= PatExp1 ":" PatExp2;
+PECons.     PatExp1 ::= PatExp2 ":" PatExp1;
 PEPat.      PatExp2 ::= Pat;
-coercions PatExp 2;
+coercions   PatExp 2;
 
-terminator PatExp "";
+PatLElem.       PLEl ::= PatExp1;
+separator   PLEl ",";
+
+terminator  PatExp "";
 
 ETuple.     Exp ::= Exp1 "," [Exp1];
-ECons.      Exp1 ::= Exp1 ":" Exp2;
+ECons.      Exp1 ::= Exp2 ":" Exp1;
 EOr.        Exp2 ::= Exp2 "or" Exp3;
 EAnd.       Exp3 ::= Exp3 "and" Exp4;
 ENot.       Exp4 ::= "not" Exp5;
@@ -57,14 +66,14 @@ EDiv.       Exp7 ::= Exp7 "/" Exp8;
 EMod.       Exp7 ::= Exp7 "%" Exp8;
 EApp.       Exp8 ::= Exp8 [Exp9];
 ELiteral.   Exp9 ::= Literal;
-coercions Exp 9;
+coercions   Exp 9;
 
 LInt.       Literal ::= Integer;
 LTrue.      Literal ::= "True";
 LFalse.     Literal ::= "False";
 LList.      Literal ::= "[" [LElem] "]";
 LVar.       Literal ::= Ident;
-LTConstr.   Literal ::= UIdent [ETCEl];
+LTConstr.   Literal ::= UIdent;
 
 
 separator   nonempty Exp1 ",";
@@ -72,13 +81,10 @@ separator   nonempty Exp1 ",";
 EListElem.  LElem ::= Exp1;
 separator   LElem ",";
 
-ETCElem.    ETCEl ::= Exp1;
-separator   ETCEl "";
+separator   Stmt ";";
+separator   nonempty MatchCase ";";
+terminator  Ident "";
+terminator  Pat "";
+terminator  nonempty Exp9 "";
 
-separator Stmt ";";
-separator nonempty MatchCase ";";
-terminator Ident "";
-terminator Pat "";
-terminator nonempty Exp9 "";
-
-comment "#";
+comment     "#";

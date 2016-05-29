@@ -1,0 +1,15 @@
+a => a;
+
+(a => a) 5;
+
+(a => a) True;
+
+let dup = a => a, a in dup True, dup False, dup 42;
+
+val duplicate = x => x, x;
+
+duplicate [1, 2];
+duplicate 5;
+duplicate False;
+
+[duplicate 5, duplicate 7, duplicate 42];
