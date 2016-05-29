@@ -2,8 +2,8 @@ all: interpreter
 
 stack:
 	wget -O stack.tar.gz https://www.stackage.org/stack/linux-x86_64
-	tar xvvf stack.tar.gz
-	rm -r stack-local
+	tar xf stack.tar.gz
+	rm -rf stack-local
 	mv stack-1* stack-local
 	SYSTEM_CERTIFICATE_PATH=/etc/openssl/certs ./stack-local/stack setup
 
