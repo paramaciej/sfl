@@ -1,0 +1,12 @@
+add; # operators have corresponding functions
+
+add 5; # partial application
+
+let x = add 4 in x 6;
+
+
+def compose f g = x => f (g x);
+
+val s = compose (mul 2) (add 3);
+
+s 10

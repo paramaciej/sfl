@@ -1,0 +1,44 @@
+# Fibonacci
+
+def fib x =
+    if x > 2 then
+        fib (x-1) + fib (x-2)
+    else
+        1;
+
+fib 1;
+fib 2;
+fib 3;
+fib 6;
+fib 25;
+
+# with pattern matching:
+
+def fib2 x = {
+    case 0 => 1;
+    case 1 => 1;
+    case n => fib (n-1) + fib (n-2)
+};
+
+fib2 1;
+fib2 2;
+fib2 3;
+fib2 6;
+fib2 25;
+
+
+def aux x y n = match n {
+    case 1 => y;
+    case _ => aux y (x+y) (n-1)
+};
+
+val fib3 = aux 0 1;
+
+fib3 1;
+fib3 2;
+fib3 3;
+fib3 6;
+fib3 25;
+
+# fib3 is linear -- it's more faster:
+fib3 100;
